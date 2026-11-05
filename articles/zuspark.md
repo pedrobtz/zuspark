@@ -34,9 +34,9 @@ con <- spark_connect("sc://spark.example.com:443/;token=my-token")
 
 ## Run SQL
 
-`spark_sql()` sends a statement. A query comes back as a
-`zuspark_query`, which holds the plan but no rows yet; nothing is read
-until you ask for it.
+[`spark_sql()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
+sends a statement. A query comes back as a `zuspark_query`, which holds
+the plan but no rows yet; nothing is read until you ask for it.
 
 ``` r
 
@@ -44,7 +44,8 @@ q <- spark_sql(con, "SELECT id, id * 2 AS twice FROM range(10)")
 spark_schema(q)
 ```
 
-Commands such as DDL, DML and `SET` run at once, and `spark_sql()`
+Commands such as DDL, DML and `SET` run at once, and
+[`spark_sql()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
 returns the rows they produce as a data frame.
 
 ``` r
@@ -54,9 +55,10 @@ spark_sql(con, "CREATE TEMPORARY VIEW small AS SELECT * FROM range(5)")
 
 ## Collect the result
 
-`spark_collect()` runs the query and returns one data frame. Types that
-R can’t hold exactly, such as a `BIGINT` beyond 2^53, are an error by
-default; `lossy` chooses text or a widened type instead.
+[`spark_collect()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+runs the query and returns one data frame. Types that R can’t hold
+exactly, such as a `BIGINT` beyond 2^53, are an error by default;
+`lossy` chooses text or a widened type instead.
 
 ``` r
 
@@ -66,8 +68,9 @@ spark_collect(q)
 spark_collect(q, lossy = "character")
 ```
 
-`spark_fetch()` returns the result as an Arrow stream instead, for code
-that consumes Arrow directly.
+[`spark_fetch()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+returns the result as an Arrow stream instead, for code that consumes
+Arrow directly.
 
 ``` r
 

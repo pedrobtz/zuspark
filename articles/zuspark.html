@@ -84,34 +84,34 @@ is sent as a request header.</p>
 <div class="section level2">
 <h2 id="run-sql">Run SQL<a class="anchor" aria-label="anchor" href="#run-sql"></a>
 </h2>
-<p><code>spark_sql()</code> sends a statement. A query comes back as a
+<p><code><a href="../reference/spark_sql.html">spark_sql()</a></code> sends a statement. A query comes back as a
 <code>zuspark_query</code>, which holds the plan but no rows yet;
 nothing is read until you ask for it.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fu">spark_sql</span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT id, id * 2 AS twice FROM range(10)"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT id, id * 2 AS twice FROM range(10)"</span><span class="op">)</span></span>
 <span><span class="fu">spark_schema</span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span></code></pre></div>
 <p>Commands such as DDL, DML and <code>SET</code> run at once, and
-<code>spark_sql()</code> returns the rows they produce as a data
+<code><a href="../reference/spark_sql.html">spark_sql()</a></code> returns the rows they produce as a data
 frame.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">spark_sql</span><span class="op">(</span><span class="va">con</span>, <span class="st">"CREATE TEMPORARY VIEW small AS SELECT * FROM range(5)"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"CREATE TEMPORARY VIEW small AS SELECT * FROM range(5)"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="collect-the-result">Collect the result<a class="anchor" aria-label="anchor" href="#collect-the-result"></a>
 </h2>
-<p><code>spark_collect()</code> runs the query and returns one data
+<p><code><a href="../reference/spark_collect.html">spark_collect()</a></code> runs the query and returns one data
 frame. Types that R can’t hold exactly, such as a <code>BIGINT</code>
 beyond 2^53, are an error by default; <code>lossy</code> chooses text or
 a widened type instead.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Open: whether spark_collect() returns a plain data frame or a zutable</span></span>
 <span><span class="co"># (the design proposes plain, unless a consumer asks).</span></span>
-<span><span class="fu">spark_collect</span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span>
-<span><span class="fu">spark_collect</span><span class="op">(</span><span class="va">q</span>, lossy <span class="op">=</span> <span class="st">"character"</span><span class="op">)</span></span></code></pre></div>
-<p><code>spark_fetch()</code> returns the result as an Arrow stream
+<span><span class="fu"><a href="../reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">q</span>, lossy <span class="op">=</span> <span class="st">"character"</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/spark_collect.html">spark_fetch()</a></code> returns the result as an Arrow stream
 instead, for code that consumes Arrow directly.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">stream</span> <span class="op">&lt;-</span> <span class="fu">spark_fetch</span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">stream</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_collect.html">spark_fetch</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="settings-interrupts-and-disconnecting">Settings, interrupts and disconnecting<a class="anchor" aria-label="anchor" href="#settings-interrupts-and-disconnecting"></a>

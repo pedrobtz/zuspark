@@ -27,11 +27,18 @@ library(zuspark)
 
 ## All functions
 
+- [`spark_collect()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+  [`spark_fetch()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+  [`as.data.frame(`*`<zuspark_query>`*`)`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+  : Fetch a query's result
 - [`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md)
   : Read and change the session's configuration
 - [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
   [`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
   : Connect to a Spark Connect server
+- [`spark_sql()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
+  [`spark_execute()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
+  : Run SQL on the server
 - [`spark_version()`](https://pedrobtz.github.io/zuspark/reference/spark_version.md)
   [`spark_session_id()`](https://pedrobtz.github.io/zuspark/reference/spark_version.md)
   : Inspect a session

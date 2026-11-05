@@ -11,6 +11,19 @@
   [`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
   releases the session.
 
+- [`spark_sql()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
+  runs a statement on the server. A command (DDL, DML, `SET`, `SHOW`)
+  runs at once and returns its rows as a data frame; a query returns a
+  `zuspark_query`, which
+  [`spark_collect()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+  turns into a data frame and
+  [`spark_fetch()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+  into a ‘zuarrow’ Arrow stream, running it afresh each time.
+  [`spark_execute()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
+  runs a statement for its effect. Results the server cuts into several
+  streams are reattached, every row arriving once, and consumed results
+  are released as they are read.
+
 - [`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md)
   reads every setting of the session, reads named ones, sets and unsets
   them, returning the previous values so that they can be restored.
@@ -27,7 +40,8 @@
   `zuspark_url_error` for a malformed connection string,
   `zuspark_version_error` for a server too old, and
   `zuspark_session_error` for a session that was released or that the
-  server lost.
+  server lost, and `zuspark_protocol_error` for a response that
+  contradicts the protocol.
 
 - zuspark ships the Spark Connect protocol definitions of Apache Spark
   4.2.1 as a compiled descriptor set. It has no compiled code of its
