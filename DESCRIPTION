@@ -28,13 +28,19 @@ Imports:
     zuid (>= 0.1.0),
     zuproto (>= 0.1.0)
 Suggests:
+    decimal,
     testthat (>= 3.0.0),
-    withr
+    withr,
+    zuint,
+    zutempo
 Remotes:
+    pedrobtz/decimal,
     pedrobtz/zuarrow,
     pedrobtz/zugrpc,
     pedrobtz/zuid,
-    pedrobtz/zuproto
+    pedrobtz/zuint,
+    pedrobtz/zuproto,
+    pedrobtz/zutempo
 Config/testthat/edition: 3
 Config/Needs/website: knitr, rmarkdown
 Roxygen: list(markdown = TRUE)
