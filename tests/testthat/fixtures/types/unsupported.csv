@@ -1,0 +1,3 @@
+name,pyspark_error
+interval_year_month,UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION
+interval_calendar,UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION
