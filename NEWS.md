@@ -31,6 +31,15 @@
   version and the session's client and server ids. `zuspark_info()`
   reports the versions zuspark was built with.
 
+* A Spark error is a `zuspark_sql_error` carrying Spark's error class,
+  SQLSTATE, message parameters and exception classes;
+  `spark_error_details()` fetches its full cause chain and stack trace.
+  Other failed calls are `zuspark_rpc_error`.
+
+* An R interrupt while a query runs cancels it and stops the job on the
+  server (`zuspark_interrupt_error`); `spark_interrupt()` stops every
+  operation of the session, or one.
+
 * Errors are conditions inheriting from `zuspark_error`:
   `zuspark_url_error` for a malformed connection string,
   `zuspark_version_error` for a server too old, and

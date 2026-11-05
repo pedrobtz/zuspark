@@ -107,3 +107,14 @@ record("schema", {
   spark_schema(q)
   spark_disconnect(con)
 })
+
+# A failing query and FetchErrorDetails for it. The failure itself is a
+# gRPC status, which is not recorded (the stream has no message); the tests
+# raise it from the error id in the FetchErrorDetails request.
+record("error-details", {
+  con <- spark_connect(remote, user_id = user_id)
+  err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
+  stopifnot(inherits(err, "zuspark_sql_error"))
+  spark_error_details(err, con)
+  spark_disconnect(con)
+})

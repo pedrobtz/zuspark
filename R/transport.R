@@ -17,7 +17,7 @@ spark_rpc <- function(con, method, request, request_type, response_type,
   bytes <- zuproto::proto_encode(request, request_type, pool)
   # Bound when the connection was made, so a finalizer that runs later
   # uses the same transport.
-  response <- con$transport(con, method, bytes, deadline, streaming = FALSE)
+  response <- with_zuspark_errors(con$transport(con, method, bytes, deadline, streaming = FALSE), con)
   record_rpc(method, bytes, list(response))
   decode_response(response, response_type)
 }
@@ -27,11 +27,11 @@ spark_rpc <- function(con, method, request, request_type, response_type,
 spark_stream <- function(con, method, request, request_type, response_type,
                          deadline = NULL) {
   bytes <- zuproto::proto_encode(request, request_type, spark_pool())
-  stream <- con$transport(con, method, bytes, deadline, streaming = TRUE)
+  stream <- with_zuspark_errors(con$transport(con, method, bytes, deadline, streaming = TRUE), con)
   recorder <- stream_recorder(method, bytes)
   list(
     next_response = function() {
-      message <- stream$next_message()
+      message <- with_zuspark_errors(stream$next_message(), con)
       recorder(message)
       if (is.null(message)) NULL else decode_response(message, response_type)
     },

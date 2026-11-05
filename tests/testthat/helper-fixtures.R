@@ -48,7 +48,9 @@ request_types <- c(
   ReleaseSession = "spark.connect.ReleaseSessionRequest",
   ExecutePlan = "spark.connect.ExecutePlanRequest",
   ReattachExecute = "spark.connect.ReattachExecuteRequest",
-  ReleaseExecute = "spark.connect.ReleaseExecuteRequest"
+  ReleaseExecute = "spark.connect.ReleaseExecuteRequest",
+  FetchErrorDetails = "spark.connect.FetchErrorDetailsRequest",
+  Interrupt = "spark.connect.InterruptRequest"
 )
 response_types <- c(
   Config = "spark.connect.ConfigResponse",
@@ -56,7 +58,9 @@ response_types <- c(
   ReleaseSession = "spark.connect.ReleaseSessionResponse",
   ExecutePlan = "spark.connect.ExecutePlanResponse",
   ReattachExecute = "spark.connect.ExecutePlanResponse",
-  ReleaseExecute = "spark.connect.ReleaseExecuteResponse"
+  ReleaseExecute = "spark.connect.ReleaseExecuteResponse",
+  FetchErrorDetails = "spark.connect.FetchErrorDetailsResponse",
+  Interrupt = "spark.connect.InterruptResponse"
 )
 
 decode_fixture <- function(scenario, n, part = "response") {
@@ -198,4 +202,31 @@ which_response <- function(messages, member) {
     if (!is.null(x[[member]])) return(i)
   }
   NA_integer_
+}
+
+# A Spark error as zugrpc raises it: status INTERNAL with Spark's ErrorInfo
+# in the status details, shaped as Spark 4.2.1 sends it (checked live).
+spark_status_condition <- function(error_class = "TABLE_OR_VIEW_NOT_FOUND",
+                                   sql_state = "42P01",
+                                   message = "[TABLE_OR_VIEW_NOT_FOUND] The table or view `no_such_table` cannot be found.",
+                                   parameters = "{\"relationName\":\"`no_such_table`\"}",
+                                   error_id = "03dec9d6-18b5-422a-a050-f3c37925a892") {
+  cnd <- grpc_status_condition("INTERNAL", message)
+  cnd$grpc_message <- message
+  cnd$details <- list(
+    code = 13L,
+    message = message,
+    details = list(ErrorInfo = list(
+      reason = "org.apache.spark.sql.catalyst.ExtendedAnalysisException",
+      domain = "org.apache.spark",
+      metadata = c(
+        classes = "[\"org.apache.spark.sql.catalyst.ExtendedAnalysisException\",\"org.apache.spark.sql.AnalysisException\"]",
+        errorClass = error_class,
+        errorId = error_id,
+        messageParameters = parameters,
+        sqlState = sql_state
+      )
+    ))
+  )
+  cnd
 }

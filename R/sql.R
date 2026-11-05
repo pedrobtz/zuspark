@@ -155,6 +155,7 @@ new_query <- function(con, sql, relation) {
   x$observed_metrics <- list()
   x$skipped <- 0L
   x$reattaches <- 0L
+  x$operation_id <- NULL
   class(x) <- "zuspark_query"
   x
 }
@@ -167,7 +168,9 @@ fetch_batches <- function(x) {
   batches <- vector("list", 16L)
   n <- 0L
   rows <- 0
-  run <- execute_plan(x$con, list(root = x$relation), function(response) {
+  run <- execute_plan(x$con, list(root = x$relation), on_operation = function(op) {
+    x$operation_id <- op
+  }, on_response = function(response) {
     batch <- response$arrow_batch
     if (is.null(batch)) {
       return()
