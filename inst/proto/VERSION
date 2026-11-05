@@ -1,0 +1,4 @@
+spark: v4.2.1
+googleapis: 02362883cd16428e5f57fa60ca8d8f60dafcdba7
+protoc: 36.2
+sha256: fba77546a88f7e96ea4b11191141a798d0a9f313486b47d4b9feea210c6b7c29

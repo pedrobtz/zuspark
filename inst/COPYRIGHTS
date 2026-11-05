@@ -1,0 +1,32 @@
+zuspark is released under the MIT licence; see LICENSE.
+
+inst/proto/spark-connect.binpb
+------------------------------
+
+A serialised protocol buffer descriptor set built by
+tools/build-descriptors.sh from two sources, pinned in inst/proto/VERSION.
+
+1. The Spark Connect protocol definitions of Apache Spark, at the tag in
+   VERSION: sql/connect/common/src/main/protobuf/spark/connect/*.proto
+   (base, catalog, commands, common, example_plugins, expressions, ml,
+   ml_common, pipelines, relations, types).
+
+   Copyright 2014 and onwards The Apache Software Foundation. Apache
+   Spark's NOTICE file is reproduced in inst/proto/NOTICE.
+
+2. google/rpc/status.proto and google/rpc/error_details.proto of
+   https://github.com/googleapis/googleapis, at the commit in VERSION.
+
+   Copyright Google LLC.
+
+Both are licensed under the Apache License, Version 2.0 (the "License");
+you may not use these files except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
