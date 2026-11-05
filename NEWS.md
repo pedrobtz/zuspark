@@ -1,5 +1,25 @@
 # zuspark 0.0.0.9000
 
+* `spark_connect()` opens a session on a Spark Connect server from an
+  `sc://` connection string, by default `SPARK_REMOTE`, with PySpark's
+  parameters: `token`, `use_ssl`, `user_id`, `user_agent`, `session_id`,
+  the gRPC message size and keepalive, and any other parameter sent as a
+  header. Servers older than Spark 3.5.0 are refused.
+  `spark_disconnect()` releases the session.
+
+* `spark_config()` reads every setting of the session, reads named ones,
+  sets and unsets them, returning the previous values so that they can be
+  restored.
+
+* `spark_version()` and `spark_session_id()` report the server's Spark
+  version and the session's client and server ids. `zuspark_info()`
+  reports the versions zuspark was built with.
+
+* Errors are conditions inheriting from `zuspark_error`:
+  `zuspark_url_error` for a malformed connection string,
+  `zuspark_version_error` for a server too old, and
+  `zuspark_session_error` for a session that was released or that the
+  server lost.
+
 * zuspark ships the Spark Connect protocol definitions of Apache Spark
-  4.2.1 as a compiled descriptor set, the base every request and response
-  is built on. It has no compiled code of its own.
+  4.2.1 as a compiled descriptor set. It has no compiled code of its own.
