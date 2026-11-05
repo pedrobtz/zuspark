@@ -329,8 +329,8 @@ spark_sql(con, sql)                # a zuspark_query, or a data frame
                                    # for DDL, DML and scripts
 spark_schema(x)                    # AnalyzePlan.Schema, a zuarrow schema
 spark_collect(x, lossy = "error", to = NULL)   # one data frame
-spark_fetch(x, lossy = "error", to = NULL)     # a zuarrow stream
-spark_execute(con, sql)            # run, discard rows, keep metrics
+spark_fetch(x)                     # a zuarrow stream
+spark_execute(con, sql)            # run, discard rows, count them
 spark_interrupt(con, x = NULL)     # one query, or every operation
 
 zuspark_info()
@@ -349,6 +349,20 @@ stream does not pull from gRPC on each `get_next()`: that would mean C
 calling R, which zuarrow forbids, from whatever thread the consumer uses.
 `spark_collect()` is `arrow_to_r()` over that stream; `to` and `lossy` pass through to
 `zuarrow` (§7.7). `as.data.frame()` on a query is `spark_collect()`.
+
+*Decided 2026-11-05 (Stage 2, with the maintainer):* `spark_fetch(x)`
+takes no `lossy` or `to`. A lazy `zuarrow` handle cannot carry them
+(`arrow_read(lazy = TRUE)` refuses them), and they belong to whoever
+converts the stream: `arrow_next()`, `arrow_to_r()`, `as.data.frame()`;
+duckdb and nanoarrow ignore them. `spark_collect(x, lossy, to)` keeps
+both and is `arrow_to_r(spark_fetch(x), to, lossy)` (D6).
+`spark_execute()` returns the number of rows the statement produced,
+invisibly; a query's metrics, observed metrics, row count, reattaches
+and skipped responses of its last run are kept on the `zuspark_query`,
+which is an environment for that reason. A command answers with a
+`local_relation` whose `data` is one IPC stream, a schema-only one when
+the command has no output; an empty query result is one batch of zero
+rows that still carries the schema (both checked on 4.2.1).
 
 *Decided 2026-11-05 (Stage 1):* `spark_config(con)` returns every
 setting as a named character vector; unnamed strings read those
@@ -504,6 +518,18 @@ PySpark releases from a thread pool. `zuspark` has no threads: it
 releases every `k` responses inline on the same channel (`k` chosen at
 Stage 2, 16 to start), and always on completion. Nothing else is
 retried in v0.1.0 (D8).
+
+*Decided 2026-11-05 (Stage 2):* `k` is 16. A cut stream reattaches;
+three reattaches in a row that bring no new response are a
+`zuspark_protocol_error`, so a server that keeps ending streams cannot
+loop forever. A transport failure (`zugrpc_error_transport`) mid-stream
+counts as a cut; any other status ends the execution. Measured against
+Spark 4.2.1 with `senderMaxStreamDuration=1s` and
+`senderMaxStreamSize=1m`: `range(10^8)` reattached 787 times and arrived
+whole in 65 s. The server buffers a result until the client releases
+it, and produces faster than a client reads, so that run needs a driver
+heap above Spark's default 1 GiB (3 GiB in `live.yaml`); PySpark meets
+the same limit.
 
 *Found by zugrpc's tests against Spark 4.2.1, 2026-11-05:* Spark sends
 `ResultComplete` only when the request sets reattachable execution in
@@ -838,7 +864,11 @@ any of them.
   stage-less pull request, once the image exists.
 - **Q2.** Should `spark_sql()` send the deprecated `SqlCommand.sql` as
   well as `input`, for 3.5 servers, or branch on `spark_version()`? Both
-  encode; the snapshot shows which.
+  encode; the snapshot shows which. **Decided 2026-11-05: send both.**
+  Spark 4.2.1's `handleSqlCommand` uses `input` when it is present (read
+  in `SparkConnectPlanner.scala`, and checked live), and a 3.5 server
+  ignores the unknown field 6 and reads `sql`: one code path, no version
+  branch. Not yet run against a 3.5 server.
 - **Q3.** The Databricks header names and serverless requirements (§7.8)
   are unverified; Stage 5 answers against a workspace.
 - **Q4.** Does `zuhttp`'s HTTP/2 streaming expose cancellation in a way

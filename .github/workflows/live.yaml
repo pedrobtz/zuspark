@@ -38,6 +38,21 @@ jobs:
             /opt/spark/sbin/start-connect-server.sh \
             --conf spark.connect.grpc.binding.address=0.0.0.0
 
+      # A second server that cuts every stream after one second or 1 MiB,
+      # so that the reattach test (Stage 2) reattaches hundreds of times.
+      # The server buffers a result until the client releases it, and
+      # range(10^8) outgrows the default 1 GiB driver heap.
+      - name: Start a stream-cutting Spark Connect 4.2.1
+        run: |
+          docker run -d --name spark-cut -p 15003:15002 \
+            -e SPARK_NO_DAEMONIZE=true \
+            apache/spark:4.2.1 \
+            /opt/spark/sbin/start-connect-server.sh \
+            --driver-memory 3g \
+            --conf spark.connect.grpc.binding.address=0.0.0.0 \
+            --conf spark.connect.execute.reattachable.senderMaxStreamDuration=1s \
+            --conf spark.connect.execute.reattachable.senderMaxStreamSize=1m
+
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: release
@@ -53,21 +68,26 @@ jobs:
       - name: Wait for Spark Connect
         timeout-minutes: 5
         run: |
-          for i in $(seq 1 120); do
-            if docker logs spark 2>&1 | grep -qi "Spark Connect server started"; then
-              break
-            fi
-            sleep 2
+          for name in spark spark-cut; do
+            for i in $(seq 1 120); do
+              if docker logs "$name" 2>&1 | grep -qi "Spark Connect server started"; then
+                break
+              fi
+              sleep 2
+            done
+            docker logs "$name" 2>&1 | tail -5
+            docker logs "$name" 2>&1 | grep -qi "Spark Connect server started"
           done
-          docker logs spark 2>&1 | tail -20
-          docker logs spark 2>&1 | grep -qi "Spark Connect server started"
 
       - name: Run the live tests
         env:
           ZUSPARK_TEST_REMOTE: sc://127.0.0.1:15002
+          ZUSPARK_TEST_REMOTE_CUT: sc://127.0.0.1:15003
           NOT_CRAN: "true"
         run: Rscript tools/ci-live-tests.R
 
-      - name: Spark's log
+      - name: Spark's logs
         if: failure()
-        run: docker logs spark 2>&1 | tail -200
+        run: |
+          docker logs spark 2>&1 | tail -100
+          docker logs spark-cut 2>&1 | tail -100

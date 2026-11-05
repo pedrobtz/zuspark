@@ -23,6 +23,7 @@ Depends:
 Imports:
     stats,
     utils,
+    zuarrow,
     zugrpc,
     zuid (>= 0.1.0),
     zuproto (>= 0.1.0)
@@ -30,6 +31,7 @@ Suggests:
     testthat (>= 3.0.0),
     withr
 Remotes:
+    pedrobtz/zuarrow,
     pedrobtz/zugrpc,
     pedrobtz/zuid,
     pedrobtz/zuproto

@@ -1,0 +1,4 @@
+# Serialised protocol buffers: never convert line endings. A small message
+# may hold no NUL byte, and Git then takes it for text, so a Windows
+# checkout with core.autocrlf would rewrite its 0x0A bytes.
+*.binpb binary
