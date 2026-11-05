@@ -25,7 +25,7 @@ benchmarks.
 | 1 | [Connection and session](#stage-1--connection-and-session) | quick | [#3](https://github.com/pedrobtz/zuspark/issues/3) | [#16](https://github.com/pedrobtz/zuspark/pull/16) | 2026-11-05 |
 | 2 | [SQL execution and results](#stage-2--sql-execution-and-results) | full | [#4](https://github.com/pedrobtz/zuspark/issues/4) | [#17](https://github.com/pedrobtz/zuspark/pull/17) | 2026-11-05 |
 | 3 | [Schema and types](#stage-3--schema-and-types) | quick | [#5](https://github.com/pedrobtz/zuspark/issues/5) | [#18](https://github.com/pedrobtz/zuspark/pull/18) | 2026-11-05 |
-| 4 | [Errors, interrupts and deadlines](#stage-4--errors-interrupts-and-deadlines) | quick | [#6](https://github.com/pedrobtz/zuspark/issues/6) | | |
+| 4 | [Errors, interrupts and deadlines](#stage-4--errors-interrupts-and-deadlines) | quick | [#6](https://github.com/pedrobtz/zuspark/issues/6) | | 2026-11-05 |
 | 5 | [Databricks](#stage-5--databricks) | quick | [#7](https://github.com/pedrobtz/zuspark/issues/7) | | |
 | 6 | [Live suite, hostile responses and benchmarks](#stage-6--live-suite-hostile-responses-and-benchmarks) | full | [#8](https://github.com/pedrobtz/zuspark/issues/8) | | |
 | 7 | [Documentation](#stage-7--documentation) | quick | [#9](https://github.com/pedrobtz/zuspark/issues/9) | | |

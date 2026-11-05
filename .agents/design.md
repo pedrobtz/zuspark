@@ -730,6 +730,24 @@ returns the response's `errors` (type hierarchy, message, stack frames,
 `cause_idx` chain, `spark_throwable` with `query_contexts`) as a list of
 data frames, on request only (D9).
 
+*Decided 2026-11-05 (Stage 4):* a zugrpc condition becomes a
+`zuspark_sql_error` when its status details carry Spark's `ErrorInfo`
+(domain `org.apache.spark`), and a `zuspark_rpc_error` otherwise,
+transport failures and `DEADLINE_EXCEEDED` included; both keep zugrpc's
+classes after `zuspark_error` (for example `zugrpc_error_internal`) and
+the zugrpc condition as `parent`, so a handler for either layer works.
+`zuspark_sql_error`'s fields are `error_class`, `sql_state`,
+`message_parameters` (named character), `classes`, `error_id`, `reason`
+and `grpc_status`; it also keeps the connection, so that
+`spark_error_details(err)` needs no other argument (`con` may still be
+given). `spark_error_details()` returns a list, root exception first, of
+lists with `type`, `message`, `error_class`, `sql_state`,
+`message_parameters`, `cause` (an index into the list), and `stack` and
+`contexts` as data frames. Spark's two JSON values are read by a small
+parser of flat string arrays and objects, so `zujson` is not needed.
+Checked live: a typo is `PARSE_SYNTAX_ERROR`, `42601`, with parameter
+`error = 'SELEC'`.
+
 *What zugrpc raises, 2026-11-05:* a non-OK status is
 `zugrpc_error_status` plus one class per code (`zugrpc_error_internal`,
 `zugrpc_error_unavailable`, …), with fields `grpc_status`, `grpc_code`,
@@ -905,8 +923,13 @@ any of them.
   the next batch boundary. *2026-11-05:* the gRPC stream is read in R
   through `$next_message()` before `zuarrow` decodes anything (§7.5),
   and zugrpc raises `zugrpc_error_interrupt` on Ctrl-C during a read,
-  so the blocking case is a read, not `get_next()`. Open until a real
-  Ctrl-C is tested (Stage 4).
+  so the blocking case is a read, not `get_next()`. **Answered
+  2026-11-05 (Stage 4):** yes. A real SIGINT three seconds into a
+  `range(10^9)` aggregation reached the read, which zuspark catches as
+  R's `interrupt` or zugrpc's `zugrpc_error_interrupt`; it cancelled the
+  stream, sent `Interrupt` for the operation, and the server answered
+  with that operation id, 3.1 s after the query started. The live test
+  sends the signal itself (Unix only).
 - **Q5.** Is a `zuhttp` HTTP/2 minor after 1.0 the right place in the
   queue for a dependency three packages deep, or should `zuspark` wait
   here until that release is dated? *2026-11-05:* the HTTP/2 code is

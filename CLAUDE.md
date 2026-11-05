@@ -31,12 +31,13 @@ Its decisions (§13) and open questions (§15) are recorded there, not here.
 
 ## Current state
 
-Stages 0 to 3 done 2026-11-05: the descriptor set pinned at Spark
+Stages 0 to 4 done 2026-11-05: the descriptor set pinned at Spark
 `v4.2.1`, and sessions: `spark_connect()`, `spark_disconnect()`,
 `spark_config()`, `spark_version()`, `spark_session_id()`,
 `zuspark_info()`, and SQL with reattachable execution: `spark_sql()`,
 `spark_collect()`, `spark_fetch()`, `spark_execute()` (Stage 2), and
-`spark_schema()` (Stage 3). Exact conversion of `int64`, `decimal128`
+`spark_schema()` (Stage 3), and Spark's errors, `spark_error_details()`,
+interrupts and `spark_interrupt()` (Stage 4). Exact conversion of `int64`, `decimal128`
 and the time types waits on zuint, decimal and zutempo registering with
 zuarrow (zuint#52, decimal#24, zutempo#94). The
 roadmap in
@@ -111,6 +112,9 @@ See `.agents/design.md` for the why; this is the where.
   [R/config.R](R/config.R) is `spark_config()`.
 - [R/conditions.R](R/conditions.R): `zuspark_abort()` raises every
   `zuspark_error`, base R conditions only.
+  [R/errors.R](R/errors.R) turns zugrpc's conditions into zuspark's, in
+  `spark_rpc()` and `spark_stream()`; [R/interrupt.R](R/interrupt.R)
+  handles Ctrl-C during a read and `spark_interrupt()`.
 
 Licences of the bundled protocol files are in
 [inst/COPYRIGHTS](inst/COPYRIGHTS).
@@ -134,6 +138,10 @@ Licences of the bundled protocol files are in
 - **The transport is read from `con$transport`, never from the option at
   call time.** A finalizer runs after the test that set the option has
   gone; binding at connect is what keeps it off the network.
+- **zuspark's error classes keep zugrpc's after them.** The reattach
+  loop and `release_session()` match `zugrpc_error_transport` and
+  `zugrpc_error_unimplemented` on conditions zuspark has already
+  converted; dropping zugrpc's classes would break both silently.
 - **No type conversion of `zuspark`'s own** (D10). Every row goes to
   `zuarrow` untouched, timestamps included; the R edge is `zuarrow`'s
   `lossy` rule.
