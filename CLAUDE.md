@@ -31,9 +31,10 @@ Its decisions (§13) and open questions (§15) are recorded there, not here.
 
 ## Current state
 
-Scaffolded 2026-11-05 with `create-pkg.sh`; no functionality yet. The
-roadmap in `.agents/roadmap.md` takes it to v0.1.0. Release is gated on
-five siblings reaching CRAN (design §4). None is on CRAN yet; `zugrpc`
+Stage 0 done 2026-11-05: the package's identity, no compiled code, and the
+Spark Connect descriptor set pinned at Spark `v4.2.1`. No user-facing
+function exists yet. The roadmap in `.agents/roadmap.md` takes it to
+v0.1.0. Release is gated on five siblings reaching CRAN (design §4). None is on CRAN yet; `zugrpc`
 (verified 2026-11-05 at `ba9d83b`) already works against live Spark on
 `zuhttp`'s and `zuproto`'s `main`, and its own release waits on zuhttp#40
 and zuproto#13. Its R API can still change before then.
@@ -46,28 +47,31 @@ none.
 
 ## Commands
 
-The siblings come from GitHub until they reach CRAN:
-`pak::pak("pedrobtz/zugrpc")` pulls `zuhttp` and `zuproto` through its
-`Remotes:`. Stage 0 adds `tools/build-descriptors.sh`, which runs `protoc`
-over the pinned Spark protos (design §11, D4), starting from zugrpc's
-`tools/gen-spark-descriptors.sh`; it is occasional, run only when the
-pinned Spark tag changes.
+The siblings come from GitHub until they reach CRAN, through `Remotes:`;
+`pak::pak("pedrobtz/zugrpc")` also pulls `zuhttp` and `zuproto`.
+
+`sh tools/build-descriptors.sh` rebuilds `inst/proto/spark-connect.binpb`
+and `inst/proto/VERSION` (needs `curl` and `protoc`). It is occasional:
+run it only when a pin at its top changes, and commit the set, `VERSION`
+and `NOTICE` together; `test-proto.R` checks the hash.
 
 ## Architecture
 
-To be written as stages land; see `.agents/design.md`. The scaffold set up a
-C layer (`src/zuspark.c`, `useDynLib` in `R/zuspark-package.R`) that the
-design does not want; see the first invariant.
+To be written as stages land; see `.agents/design.md`. So far:
+[R/proto.R](R/proto.R) loads the shipped descriptor set into one zuproto
+pool per session (`spark_pool()`), which every message is encoded and
+decoded with. Licences of the bundled protocol files are in
+[inst/COPYRIGHTS](inst/COPYRIGHTS).
 
 ## Invariants that are easy to break
 
 - **No `src/`** (D3). `zuspark` is pure R; native code lives in `zuhttp`
-  and `zuarrow`. The `create-pkg.sh` C stub and the `useDynLib` directive
-  are to be removed in Stage 0, and `test-abi.R` then asserts `src/` stays
-  absent.
+  and `zuarrow`. `test-abi.R` fails if a shared library is ever built or
+  loaded.
 - **The descriptor set is built by a `tools/` script, never at install
-  time** (D4). It ships compiled in `inst/`, pinned to one Spark tag with
-  its SHA-256 recorded; re-pinning re-runs the proto snapshots.
+  time** (D4). It ships compiled in `inst/proto/`, pinned to the Spark tag
+  of the live-test image with its SHA-256 recorded; the two are re-pinned
+  together, and re-pinning re-runs the proto snapshots.
 - **No type conversion of `zuspark`'s own** (D10). Every row goes to
   `zuarrow` untouched, timestamps included; the R edge is `zuarrow`'s
   `lossy` rule.

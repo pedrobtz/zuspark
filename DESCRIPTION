@@ -1,15 +1,33 @@
 Package: zuspark
-Title: What the Package Does (One Line, Title Case)
+Title: Native Client for 'Spark Connect'
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Authors@R: c(
+    person("Pedro", "Baltazar", , "pedrobtz@gmail.com", role = c("aut", "cre", "cph")),
+    person("The Apache Software Foundation", role = "cph",
+           comment = "Spark Connect protocol definitions in inst/proto"),
+    person("Google LLC", role = "cph",
+           comment = "google/rpc protocol definitions in inst/proto")
+    )
+Description: Connects to a 'Spark Connect' endpoint, runs 'Spark SQL'
+    statements there and returns the results as 'Arrow' data or data
+    frames, without a 'Java' virtual machine, 'Python' or a 'Spark'
+    installation. Speaks the 'Spark Connect' protocol itself, in 'R': 'gRPC'
+    calls through 'zugrpc', protocol buffer messages through 'zuproto' and
+    'Arrow' record batches through 'zuarrow'.
 License: MIT + file LICENSE
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 8.1.0
-Suggests: 
-    testthat (>= 3.0.0)
-Config/testthat/edition: 3
 URL: https://pedrobtz.github.io/zuspark/
+Encoding: UTF-8
+Language: en-GB
+Depends:
+    R (>= 4.1)
+Imports:
+    stats,
+    zuproto (>= 0.1.0)
+Suggests:
+    testthat (>= 3.0.0)
+Remotes:
+    pedrobtz/zuproto
+Config/testthat/edition: 3
 Config/Needs/website: knitr, rmarkdown
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.1.0
