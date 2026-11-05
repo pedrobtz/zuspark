@@ -623,7 +623,12 @@ column as Arrow (`UNSUPPORTED_TIME_TYPE`, SQLSTATE `0A000`), though
 PySpark's own `toArrow()` refuses the two interval types without a
 `duration` form (`UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION`), so for
 those the server is the only reference; `zuarrow` has no R form for
-them, even as text. `CHAR(n)` arrives as `string`. None of `zuint`,
+them, even as text. `CHAR(n)` arrives as `string`. *Same day, later:*
+`zuarrow`'s `main` (825c43b) now reads `timestamp[us]`, with or
+without a zone, as `POSIXct` under every `lossy` policy, so the
+`TIMESTAMP` and `TIMESTAMP_NTZ` rows above are `POSIXct` with that
+`zuarrow`; the tests accept either rule, since the rule is `zuarrow`'s
+(D10). None of `zuint`,
 `decimal` and `zutempo` registers its exact targets with `zuarrow` yet
 (zuint#52, decimal#24, zutempo#94), so the "exact with" column holds
 only once they do; until then `lossy = "character"` gives exact text

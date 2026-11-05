@@ -19,8 +19,8 @@
   running it.
 
 * Results reach R as 'zuarrow' converts the Arrow the server sends. A
-  `BIGINT` beyond 2^53, a `DECIMAL`, a timestamp or an interval is an
-  error by default; `lossy = "character"` in `spark_collect()` gives its
+  `BIGINT` beyond 2^53, a `DECIMAL` or an interval is an error by
+  default; `lossy = "character"` in `spark_collect()` gives its
   exact text and `lossy = "allow"` a widened value.
 
 * `spark_config()` reads every setting of the session, reads named ones,

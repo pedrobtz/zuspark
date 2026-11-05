@@ -16,14 +16,38 @@ exact <- list(
 )
 
 lossy <- data.frame(
-  name = c("bigint_large", "decimal", "timestamp", "timestamp_ntz", "interval_day_time"),
-  package = c("zuint", "decimal", "zutempo", "zutempo", "zutempo"),
-  text = c(
-    "9007199254740993", "12345678.91", "2026-11-05T10:11:12.123456Z",
-    "2026-11-05T10:11:12.123456", "93784500000"
-  ),
+  name = c("bigint_large", "decimal", "interval_day_time"),
+  package = c("zuint", "decimal", "zutempo"),
+  text = c("9007199254740993", "12345678.91", "93784500000"),
   stringsAsFactors = FALSE
 )
+
+# Timestamps are zuarrow's to decide (D10), and its rule moved: zuarrow
+# 0.1.0 as of 2026-11-04 errored without zutempo, as design §7.7 says;
+# its main as of 2026-11-05 (825c43b) reads timestamp[us] as POSIXct.
+# Either is accepted, at the instant PySpark recorded.
+timestamps <- data.frame(
+  name = c("timestamp", "timestamp_ntz"),
+  text = c("2026-11-05T10:11:12.123456Z", "2026-11-05T10:11:12.123456"),
+  stringsAsFactors = FALSE
+)
+instant <- as.POSIXct("2026-11-05 10:11:12.123456", tz = "UTC")
+
+test_that("timestamps follow zuarrow's rule, at PySpark's instant", {
+  for (i in seq_len(nrow(timestamps))) {
+    name <- timestamps$name[[i]]
+    got <- tryCatch(convert_c(pyspark_bytes(name)), zuarrow_lossy_error = identity)
+    if (inherits(got, "condition")) {
+      expect_match(conditionMessage(got), "zutempo", label = name)
+      text <- convert_c(pyspark_bytes(name), lossy = "character")
+      expect_identical(as.vector(text), c(timestamps$text[[i]], NA), label = name)
+    } else {
+      expect_s3_class(got, "POSIXct")
+      expect_equal(as.numeric(got[[1]]), as.numeric(instant), tolerance = 1e-6, label = name)
+      expect_true(is.na(got[[2]]), label = name)
+    }
+  }
+})
 
 test_that("PySpark's bytes cover the matrix, less what PySpark refuses", {
   m <- type_matrix()
@@ -84,7 +108,7 @@ test_that("lossy = 'allow' widens them", {
   expect_identical(convert_c(pyspark_bytes("decimal"), lossy = "allow"), c(12345678.91, NA))
   ts <- convert_c(pyspark_bytes("timestamp"), lossy = "allow")
   expect_s3_class(ts, "POSIXct")
-  expect_equal(as.numeric(ts[[1]]), as.numeric(as.POSIXct("2026-11-05 10:11:12.123456", tz = "UTC")))
+  expect_equal(as.numeric(ts[[1]]), as.numeric(instant), tolerance = 1e-6)
   expect_s3_class(convert_c(pyspark_bytes("interval_day_time"), lossy = "allow"), "difftime")
 })
 
