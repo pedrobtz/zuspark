@@ -24,6 +24,15 @@
   streams are reattached, every row arriving once, and consumed results
   are released as they are read.
 
+- [`spark_schema()`](https://pedrobtz.github.io/zuspark/reference/spark_schema.md)
+  gives a query’s schema, as Spark’s types, without running it.
+
+- Results reach R as ‘zuarrow’ converts the Arrow the server sends. A
+  `BIGINT` beyond 2^53, a `DECIMAL` or an interval is an error by
+  default; `lossy = "character"` in
+  [`spark_collect()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+  gives its exact text and `lossy = "allow"` a widened value.
+
 - [`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md)
   reads every setting of the session, reads named ones, sets and unsets
   them, returning the previous values so that they can be restored.

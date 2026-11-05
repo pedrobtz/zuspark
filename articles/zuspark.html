@@ -89,7 +89,7 @@ is sent as a request header.</p>
 nothing is read until you ask for it.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT id, id * 2 AS twice FROM range(10)"</span><span class="op">)</span></span>
-<span><span class="fu">spark_schema</span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/spark_schema.html">spark_schema</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span></code></pre></div>
 <p>Commands such as DDL, DML and <code>SET</code> run at once, and
 <code><a href="../reference/spark_sql.html">spark_sql()</a></code> returns the rows they produce as a data
 frame.</p>

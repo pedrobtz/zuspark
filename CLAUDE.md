@@ -33,7 +33,7 @@ recorded there, not here.
 
 ## Current state
 
-Stages 0 to 2 done 2026-11-05: the descriptor set pinned at Spark
+Stages 0 to 3 done 2026-11-05: the descriptor set pinned at Spark
 `v4.2.1`, and sessions:
 [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md),
 [`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md),
@@ -46,12 +46,16 @@ and SQL with reattachable execution:
 [`spark_collect()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md),
 [`spark_fetch()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md),
 [`spark_execute()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
-(Stage 2). The roadmap in `.agents/roadmap.md` takes it to v0.1.0.
-Release is gated on five siblings reaching CRAN (design §4). None is on
-CRAN yet; `zugrpc` (verified 2026-11-05 at `ba9d83b`) already works
-against live Spark on `zuhttp`’s and `zuproto`’s `main`, and its own
-release waits on zuhttp#40 and zuproto#13. Its R API can still change
-before then.
+(Stage 2), and
+[`spark_schema()`](https://pedrobtz.github.io/zuspark/reference/spark_schema.md)
+(Stage 3). Exact conversion of `int64`, `decimal128` and the time types
+waits on zuint, decimal and zutempo registering with zuarrow (zuint#52,
+decimal#24, zutempo#94). The roadmap in `.agents/roadmap.md` takes it to
+v0.1.0. Release is gated on five siblings reaching CRAN (design §4).
+None is on CRAN yet; `zugrpc` (verified 2026-11-05 at `ba9d83b`) already
+works against live Spark on `zuhttp`’s and `zuproto`’s `main`, and its
+own release waits on zuhttp#40 and zuproto#13. Its R API can still
+change before then.
 
 ## Versions and dependents
 
@@ -175,6 +179,13 @@ only Ubuntu runners have Docker.
   `edit_response()` and `which_response()` rewrite one recorded message,
   and a condition in the message list is signalled when the stream
   reaches it.
+- [helper-types.R](https://pedrobtz.github.io/zuspark/tests/testthat/helper-types.R):
+  the type matrix, `fixtures/types/types.csv`, one query per Spark type,
+  and PySpark’s Arrow bytes for each, recorded by
+  `tools/pyspark-types.py` inside the Spark container (it needs
+  `pip install pyarrow pandas grpcio grpcio-status googleapis-common-protos zstandard`
+  there first). Re-record them with the fixtures when the Spark pin
+  moves.
 - [helper-live.R](https://pedrobtz.github.io/zuspark/tests/testthat/helper-live.R):
   `test-live-*.R` run only with `ZUSPARK_TEST_REMOTE` set, and the
   reattach test only with `ZUSPARK_TEST_REMOTE_CUT`, a server that cuts

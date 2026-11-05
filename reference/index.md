@@ -11,6 +11,8 @@
 - [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
   [`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
   : Connect to a Spark Connect server
+- [`spark_schema()`](https://pedrobtz.github.io/zuspark/reference/spark_schema.md)
+  : A query's schema
 - [`spark_sql()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
   [`spark_execute()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
   : Run SQL on the server
