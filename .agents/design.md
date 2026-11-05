@@ -746,7 +746,7 @@ any of them.
   tests more easily. The cost is §4: the gate waits on `zuhttp`'s
   HTTP/2 minor.
 - **D4 (C).** Ship a compiled descriptor set at a pinned Spark tag
-  (`v4.3.0` at drafting), built by a `tools/` script with `protoc`, not
+  (`v4.2.1`, per Q1), built by a `tools/` script with `protoc`, not
   at install time and not through `proto_compile()`, which `zuproto`
   does not have. Re-pinning is a stage-less pull request that re-runs
   the snapshots.
@@ -796,6 +796,10 @@ any of them.
   `tools/gen-spark-descriptors.sh` already builds the set with `protoc`
   from the protos at `v4.2.1`, matching its 4.2.1 image; Stage 0 can
   reuse it at either tag.
+  **Decided 2026-11-05: both at `v4.2.1`.** The set is pinned to the tag
+  of the image the live tests run, so what is encoded and what the
+  server speaks are one version; both move to 4.3.0 together, in one
+  stage-less pull request, once the image exists.
 - **Q2.** Should `spark_sql()` send the deprecated `SqlCommand.sql` as
   well as `input`, for 3.5 servers, or branch on `spark_version()`? Both
   encode; the snapshot shows which.

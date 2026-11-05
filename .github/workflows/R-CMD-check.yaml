@@ -29,3 +29,11 @@ jobs:
       # schedule, on a manual dispatch, and on a pull request labelled
       # `full-ci`.
       profile: auto
+      # The shared default has no R-devel runner; this row covers CRAN's own
+      # Windows R-devel check. It runs in the full profile only.
+      runners: |
+        [{"os": "macos-latest", "r": "release"},
+         {"os": "windows-latest", "r": "release"},
+         {"os": "windows-latest", "r": "devel"},
+         {"os": "ubuntu-latest", "r": "release"},
+         {"os": "ubuntu-latest", "r": "oldrel-1"}]
