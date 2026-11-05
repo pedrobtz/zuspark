@@ -22,10 +22,16 @@ Depends:
     R (>= 4.1)
 Imports:
     stats,
+    utils,
+    zugrpc,
+    zuid (>= 0.1.0),
     zuproto (>= 0.1.0)
 Suggests:
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    withr
 Remotes:
+    pedrobtz/zugrpc,
+    pedrobtz/zuid,
     pedrobtz/zuproto
 Config/testthat/edition: 3
 Config/Needs/website: knitr, rmarkdown
