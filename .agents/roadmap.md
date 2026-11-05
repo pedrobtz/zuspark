@@ -23,7 +23,7 @@ benchmarks.
 | --- | --- | --- | --- | --- | --- |
 | 0 | [Package identity and descriptor set](#stage-0--package-identity-and-descriptor-set) | quick | [#2](https://github.com/pedrobtz/zuspark/issues/2) | [#15](https://github.com/pedrobtz/zuspark/pull/15) | 2026-11-05 |
 | 1 | [Connection and session](#stage-1--connection-and-session) | quick | [#3](https://github.com/pedrobtz/zuspark/issues/3) | [#16](https://github.com/pedrobtz/zuspark/pull/16) | 2026-11-05 |
-| 2 | [SQL execution and results](#stage-2--sql-execution-and-results) | full | [#4](https://github.com/pedrobtz/zuspark/issues/4) | | |
+| 2 | [SQL execution and results](#stage-2--sql-execution-and-results) | full | [#4](https://github.com/pedrobtz/zuspark/issues/4) | | 2026-11-05 |
 | 3 | [Schema and types](#stage-3--schema-and-types) | quick | [#5](https://github.com/pedrobtz/zuspark/issues/5) | | |
 | 4 | [Errors, interrupts and deadlines](#stage-4--errors-interrupts-and-deadlines) | quick | [#6](https://github.com/pedrobtz/zuspark/issues/6) | | |
 | 5 | [Databricks](#stage-5--databricks) | quick | [#7](https://github.com/pedrobtz/zuspark/issues/7) | | |
@@ -383,8 +383,6 @@ fixed. No new features. Only submission is left when it closes.
 
 ## Blocking open questions
 
-- [§15](design.md#15-open-questions) Q2 blocks Stage 2: whether
-  `spark_sql()` also sends the deprecated `SqlCommand.sql` for 3.5 servers.
 - [§15](design.md#15-open-questions) Q5 and Q6 block Stage 9: when the
   siblings reach CRAN, and whether 0.1.0 is a CRAN submission at all.
   zugrpc's roadmap records that zuhttp 0.1.0 carries HTTP/2.
