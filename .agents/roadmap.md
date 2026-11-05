@@ -24,7 +24,7 @@ benchmarks.
 | 0 | [Package identity and descriptor set](#stage-0--package-identity-and-descriptor-set) | quick | [#2](https://github.com/pedrobtz/zuspark/issues/2) | [#15](https://github.com/pedrobtz/zuspark/pull/15) | 2026-11-05 |
 | 1 | [Connection and session](#stage-1--connection-and-session) | quick | [#3](https://github.com/pedrobtz/zuspark/issues/3) | [#16](https://github.com/pedrobtz/zuspark/pull/16) | 2026-11-05 |
 | 2 | [SQL execution and results](#stage-2--sql-execution-and-results) | full | [#4](https://github.com/pedrobtz/zuspark/issues/4) | [#17](https://github.com/pedrobtz/zuspark/pull/17) | 2026-11-05 |
-| 3 | [Schema and types](#stage-3--schema-and-types) | quick | [#5](https://github.com/pedrobtz/zuspark/issues/5) | | |
+| 3 | [Schema and types](#stage-3--schema-and-types) | quick | [#5](https://github.com/pedrobtz/zuspark/issues/5) | [#18](https://github.com/pedrobtz/zuspark/pull/18) | 2026-11-05 |
 | 4 | [Errors, interrupts and deadlines](#stage-4--errors-interrupts-and-deadlines) | quick | [#6](https://github.com/pedrobtz/zuspark/issues/6) | | |
 | 5 | [Databricks](#stage-5--databricks) | quick | [#7](https://github.com/pedrobtz/zuspark/issues/7) | | |
 | 6 | [Live suite, hostile responses and benchmarks](#stage-6--live-suite-hostile-responses-and-benchmarks) | full | [#8](https://github.com/pedrobtz/zuspark/issues/8) | | |
@@ -187,6 +187,18 @@ PySpark's bytes say, or errors as `lossy` says.
 - §7.7's table passes against PySpark's IPC bytes, with and without
   `zuint`, `decimal` and `zutempo` loaded.
 - `spark_schema()` on a query matches the schema of its collected result.
+
+**Deviation (2026-11-05, agreed with the maintainer).** None of `zuint`,
+`decimal` and `zutempo` registers its exact targets with `zuarrow` yet
+([zuint#52](https://github.com/pedrobtz/zuint/issues/52),
+[decimal#24](https://github.com/pedrobtz/decimal/issues/24),
+[zutempo#94](https://github.com/pedrobtz/zutempo/issues/94)), so the
+first exit criterion holds without them loaded only. The checks with them
+loaded are in `test-types.R` and skip until each package registers; they
+run with no change here once one does. PySpark's `toArrow()` refuses the
+two interval types without a `duration` form, so those are checked
+against the server alone. `spark_schema()` returns Spark's schema, not an
+Arrow one (design §6).
 
 **Design.** [§7.7](design.md#77-types).
 

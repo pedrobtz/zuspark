@@ -33,7 +33,14 @@ fixtures <- file.path("tests", "testthat", "fixtures")
 
 user_id <- "zuspark"
 
+# Rscript tools/record-fixtures.R <remote> <cutting> [scenario ...] records
+# only the scenarios named; with none, every scenario.
+only <- if (length(args) > 2L) args[-(1:2)] else character()
+
 record <- function(scenario, code) {
+  if (length(only) && !scenario %in% only) {
+    return(invisible())
+  }
   dir <- file.path(fixtures, scenario)
   unlink(dir, recursive = TRUE)
   withr::with_options(list(zuspark.record = dir), code)
@@ -86,5 +93,17 @@ record("reattach", {
   q <- spark_sql(con, "SELECT id FROM range(1000)")
   spark_collect(q)
   stopifnot(q$reattaches >= 2L)
+  spark_disconnect(con)
+})
+
+# AnalyzePlan.Schema for a query of nested and parameterised types.
+record("schema", {
+  con <- spark_connect(remote, user_id = user_id)
+  q <- spark_sql(con, paste(
+    "SELECT 1L AS id, CAST(1.5 AS DECIMAL(10, 2)) AS amount,",
+    "array(named_struct('k', 'a', 'v', map('x', 1))) AS nested,",
+    "INTERVAL '1' HOUR AS h, CAST(NULL AS STRING) AS maybe"
+  ))
+  spark_schema(q)
   spark_disconnect(con)
 })

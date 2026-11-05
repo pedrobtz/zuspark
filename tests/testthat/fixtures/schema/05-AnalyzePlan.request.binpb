@@ -1,0 +1,6 @@
+
+$110a9557-0df3-47e6-ba09-bec7c630dd9f	
+zuspark8zuspark zuspark/0.0.0.9000 spark/4.2.1 os/darwin r/4.5.2"´
+±
+®R«
+¨SELECT 1L AS id, CAST(1.5 AS DECIMAL(10, 2)) AS amount, array(named_struct('k', 'a', 'v', map('x', 1))) AS nested, INTERVAL '1' HOUR AS h, CAST(NULL AS STRING) AS maybeŠ$6375475b-6990-47db-b736-93e5a3ee4e78
