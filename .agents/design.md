@@ -327,7 +327,7 @@ spark_session_id(con)              # client and server-side ids
 # SQL
 spark_sql(con, sql)                # a zuspark_query, or a data frame
                                    # for DDL, DML and scripts
-spark_schema(x)                    # AnalyzePlan.Schema, a zuarrow schema
+spark_schema(x)                    # AnalyzePlan.Schema, Spark's types
 spark_collect(x, lossy = "error", to = NULL)   # one data frame
 spark_fetch(x)                     # a zuarrow stream
 spark_execute(con, sql)            # run, discard rows, count them
@@ -349,6 +349,14 @@ stream does not pull from gRPC on each `get_next()`: that would mean C
 calling R, which zuarrow forbids, from whatever thread the consumer uses.
 `spark_collect()` is `arrow_to_r()` over that stream; `to` and `lossy` pass through to
 `zuarrow` (§7.7). `as.data.frame()` on a query is `spark_collect()`.
+
+*Decided 2026-11-05 (Stage 3, with the maintainer):* `spark_schema(x)`
+returns Spark's schema, not an Arrow one: one `AnalyzePlan.Schema` call,
+no execution, as a data frame of `name`, `type` (Spark SQL's DDL text,
+such as `decimal(10,2)` or `array<struct<k:string>>`) and `nullable`.
+The server answers with Spark's `DataType`, and turning that into Arrow
+would repeat the server's own mapping, which D10 rules out; the Arrow
+schema is the schema of `spark_fetch()`'s stream.
 
 *Decided 2026-11-05 (Stage 2, with the maintainer):* `spark_fetch(x)`
 takes no `lossy` or `to`. A lazy `zuarrow` handle cannot carry them
@@ -602,9 +610,24 @@ large variants:
 | `ARRAY<T>`, `MAP<K, V>`, `STRUCT` | `list`, `map`, `struct` | list and data frame columns |
 | `NULL` | `null` | `logical` of `NA` |
 | `VARIANT` | `struct{value: binary, metadata: binary}` | that struct, undecoded |
-| `TIME(p)` (Spark 4.1+) | through `TypeApiOps`, precision in field metadata | Stage 3 decides |
+| `TIME(p)` (Spark 4.1+) | none: Spark 4.2.1 refuses (`UNSUPPORTED_TIME_TYPE`) | the server's error |
 
 <!-- markdownlint-enable MD013 -->
+
+*Checked 2026-11-05 (Stage 3) against Spark 4.2.1 and PySpark 4.2.1:*
+the server sends exactly the Arrow types above, with
+`spark.sql.session.timeZone` as the timestamp zone (`Etc/UTC` by
+default). `TIME` is decided by the server: it refuses to send a `TIME`
+column as Arrow (`UNSUPPORTED_TIME_TYPE`, SQLSTATE `0A000`), though
+`spark_schema()` reports it as `time(p)`; zuspark passes the error on.
+PySpark's own `toArrow()` refuses the two interval types without a
+`duration` form (`UNSUPPORTED_DATA_TYPE_FOR_ARROW_CONVERSION`), so for
+those the server is the only reference; `zuarrow` has no R form for
+them, even as text. `CHAR(n)` arrives as `string`. None of `zuint`,
+`decimal` and `zutempo` registers its exact targets with `zuarrow` yet
+(zuint#52, decimal#24, zutempo#94), so the "exact with" column holds
+only once they do; until then `lossy = "character"` gives exact text
+and `lossy = "allow"` the widened value.
 
 `zuspark` adds nothing to this table: `zuarrow`'s exact-or-error rule
 (its §6.3) is the R edge. A `BIGINT` column with a value beyond 2⁵³ in
