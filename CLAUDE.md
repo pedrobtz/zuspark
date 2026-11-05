@@ -33,7 +33,7 @@ recorded there, not here.
 
 ## Current state
 
-Stages 0 to 3 done 2026-11-05: the descriptor set pinned at Spark
+Stages 0 to 4 done 2026-11-05: the descriptor set pinned at Spark
 `v4.2.1`, and sessions:
 [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md),
 [`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md),
@@ -48,7 +48,11 @@ and SQL with reattachable execution:
 [`spark_execute()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
 (Stage 2), and
 [`spark_schema()`](https://pedrobtz.github.io/zuspark/reference/spark_schema.md)
-(Stage 3). Exact conversion of `int64`, `decimal128` and the time types
+(Stage 3), and Spark’s errors,
+[`spark_error_details()`](https://pedrobtz.github.io/zuspark/reference/spark_error_details.md),
+interrupts and
+[`spark_interrupt()`](https://pedrobtz.github.io/zuspark/reference/spark_interrupt.md)
+(Stage 4). Exact conversion of `int64`, `decimal128` and the time types
 waits on zuint, decimal and zutempo registering with zuarrow (zuint#52,
 decimal#24, zutempo#94). The roadmap in `.agents/roadmap.md` takes it to
 v0.1.0. Release is gated on five siblings reaching CRAN (design §4).
@@ -129,7 +133,12 @@ See `.agents/design.md` for the why; this is the where.
   [`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md).
 - [R/conditions.R](https://pedrobtz.github.io/zuspark/R/conditions.R):
   `zuspark_abort()` raises every `zuspark_error`, base R conditions
-  only.
+  only. [R/errors.R](https://pedrobtz.github.io/zuspark/R/errors.R)
+  turns zugrpc’s conditions into zuspark’s, in `spark_rpc()` and
+  `spark_stream()`;
+  [R/interrupt.R](https://pedrobtz.github.io/zuspark/R/interrupt.R)
+  handles Ctrl-C during a read and
+  [`spark_interrupt()`](https://pedrobtz.github.io/zuspark/reference/spark_interrupt.md).
 
 Licences of the bundled protocol files are in
 [inst/COPYRIGHTS](https://pedrobtz.github.io/zuspark/inst/COPYRIGHTS).
@@ -153,6 +162,10 @@ Licences of the bundled protocol files are in
 - **The transport is read from `con$transport`, never from the option at
   call time.** A finalizer runs after the test that set the option has
   gone; binding at connect is what keeps it off the network.
+- **zuspark’s error classes keep zugrpc’s after them.** The reattach
+  loop and `release_session()` match `zugrpc_error_transport` and
+  `zugrpc_error_unimplemented` on conditions zuspark has already
+  converted; dropping zugrpc’s classes would break both silently.
 - **No type conversion of `zuspark`’s own** (D10). Every row goes to
   `zuarrow` untouched, timestamps included; the R edge is `zuarrow`’s
   `lossy` rule.

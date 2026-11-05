@@ -80,7 +80,8 @@ stream <- spark_fetch(q)
 ## Settings, interrupts and disconnecting
 
 [`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md)
-reads the session’s settings, or sets them by name. `spark_interrupt()`
+reads the session’s settings, or sets them by name.
+[`spark_interrupt()`](https://pedrobtz.github.io/zuspark/reference/spark_interrupt.md)
 stops a running query on the server, or every operation when given no
 query.
 [`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)

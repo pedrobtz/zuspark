@@ -11,6 +11,10 @@
 - [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
   [`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
   : Connect to a Spark Connect server
+- [`spark_error_details()`](https://pedrobtz.github.io/zuspark/reference/spark_error_details.md)
+  : Spark's full account of an error
+- [`spark_interrupt()`](https://pedrobtz.github.io/zuspark/reference/spark_interrupt.md)
+  : Interrupt operations on the server
 - [`spark_schema()`](https://pedrobtz.github.io/zuspark/reference/spark_schema.md)
   : A query's schema
 - [`spark_sql()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)

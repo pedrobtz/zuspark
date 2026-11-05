@@ -117,12 +117,12 @@ instead, for code that consumes Arrow directly.</p>
 <h2 id="settings-interrupts-and-disconnecting">Settings, interrupts and disconnecting<a class="anchor" aria-label="anchor" href="#settings-interrupts-and-disconnecting"></a>
 </h2>
 <p><code><a href="../reference/spark_config.html">spark_config()</a></code> reads the session’s settings, or sets
-them by name. <code>spark_interrupt()</code> stops a running query on
+them by name. <code><a href="../reference/spark_interrupt.html">spark_interrupt()</a></code> stops a running query on
 the server, or every operation when given no query.
 <code><a href="../reference/spark_connect.html">spark_disconnect()</a></code> releases the session.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/spark_config.html">spark_config</a></span><span class="op">(</span><span class="va">con</span>, spark.sql.session.timeZone <span class="op">=</span> <span class="st">"UTC"</span><span class="op">)</span></span>
-<span><span class="fu">spark_interrupt</span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/spark_interrupt.html">spark_interrupt</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/spark_connect.html">spark_disconnect</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
