@@ -217,8 +217,8 @@ method collides (D11). No RFC here uses the prefix (searched
   IPC compression, should a server send it, is `zuarrow`'s through
   `zukomp` 0.2.0, the release with the codecs.
 - **`zuid`** (RFC 0043, 0.1.0 on `main`, CRAN submission open):
-  `id_uuid(version = 4)` for the session id, which PySpark validates as
-  a version 4 UUID, and for operation ids.
+  `uuid(version = 4)` for the session id and for operation ids
+  (the function is `uuid()`, not `id_uuid()`; corrected 2026-11-05).
 - **`zuint`, `decimal`, `zutempo`**: `Suggests`. They register the exact
   targets for `int64`, `decimal128` and microsecond timestamps in
   `zuarrow`'s registry; without them `spark_collect()` errors or, with
@@ -321,7 +321,7 @@ spark_connect(url = Sys.getenv("SPARK_REMOTE"), ...,
               headers = NULL, deadline = NULL)
 spark_disconnect(con, allow_reconnect = FALSE)
 spark_version(con)                 # AnalyzePlan.SparkVersion
-spark_config(con, ...)             # get all; set by name = value
+spark_config(con, ...)             # get all, get by name, set, unset
 spark_session_id(con)              # client and server-side ids
 
 # SQL
@@ -350,6 +350,20 @@ calling R, which zuarrow forbids, from whatever thread the consumer uses.
 `spark_collect()` is `arrow_to_r()` over that stream; `to` and `lossy` pass through to
 `zuarrow` (§7.7). `as.data.frame()` on a query is `spark_collect()`.
 
+*Decided 2026-11-05 (Stage 1):* `spark_config(con)` returns every
+setting as a named character vector; unnamed strings read those
+settings (`NA` for one without a value); `name = value` sets, a named
+`NULL` or `NA` unsets, and returns the previous values invisibly, so
+that passing them back restores the session, as with `options()`.
+Mixing reads and sets in one call is an error. The server's `warnings`
+become R warnings. `spark_version()` is the string the server reported
+at connect, such as `"4.2.1"`, cached on the connection.
+`spark_disconnect(allow_reconnect = FALSE)` maps to
+`ReleaseSessionRequest.allow_reconnect`: Spark 4.2.1 retires a released
+id, and a later connect with it fails with
+`INVALID_HANDLE.SESSION_CLOSED` (status `INTERNAL`), unless the release
+allowed reconnects.
+
 ## 7. Semantics
 
 ### 7.1 Connection strings
@@ -369,8 +383,17 @@ sc://host:port/;param1=value;param2=value
 - Reserved parameters: `token` (bearer auth, and turns TLS on),
   `use_ssl` (default `false`), `user_id` (fills `UserContext.user_id`),
   `user_agent` (prefixes `client_type`), `session_id` (must parse as a
-  UUID; PySpark checks version 4), `grpc_max_message_size` (default
-  128 MiB) and four `grpc_keepalive_*` keys.
+  UUID), `grpc_max_message_size` (default 128 MiB) and four
+  `grpc_keepalive_*` keys: `_enabled`, `_time_ms`, `_timeout_ms` and
+  `_without_calls`.
+  *Decided 2026-11-05 (Stage 1):* `session_id` accepts any well-formed
+  UUID and is sent as written. PySpark's `uuid.UUID(x, version=4)`
+  rewrites the version bits rather than checking them, so it never
+  rejected another version. The four keepalive keys are reserved as at
+  `v4.3.0`, though `v4.2.1` reserves only the first five names; they map
+  to `zugrpc::grpc_keepalive()` (`_enabled=false` turns it off), and
+  `_without_calls` is accepted and ignored, since zugrpc's keepalive
+  pings only before a call.
 - **Every other parameter becomes a request header**, sent as gRPC
   metadata on every call (`ChannelBuilder.metadata()`; the Go client's
   `channel.go` states the same rule). That is how
@@ -378,13 +401,18 @@ sc://host:port/;param1=value;param2=value
   knowing the name.
 - `SPARK_REMOTE` is the default URL and `SPARK_CONNECT_AUTHENTICATE_TOKEN`
   the fallback token, both read by PySpark and by `zuspark`. `user_id`
-  defaults to `SPARK_USER`, then `USER`; `session_id` to a fresh version
-  4 UUID from `zuid`.
+  defaults to `SPARK_USER`, then `USER`, then (on Windows, which sets
+  neither) `Sys.info()[["user"]]`; `session_id` to a fresh version 4
+  UUID from `zuid`; the user agent to `SPARK_CONNECT_USER_AGENT`, as in
+  PySpark, then `zuspark`.
 
 `spark_connect()` takes the string, `...` as named parameters appended
 to it, and `headers` for names that are not valid in a URL. A malformed
 string is a `zuspark_url_error` naming the part, with PySpark's four
-messages as the test cases.
+messages as the test cases. *2026-11-05:* PySpark's missing-host
+message quotes its internal `http://` rewrite of the string; zuspark's
+quotes the string as given. A malformed port, which Python reports as a
+`ValueError`, is a fifth `zuspark_url_error` (part `port`).
 
 ### 7.2 Sessions
 
@@ -396,7 +424,15 @@ restart that recycled the client id is detected by the server rather
 than by a wrong result. `client_type` is the user agent in PySpark's
 layout: the `user_agent` parameter or `zuspark`, then `zuspark/<ver>`,
 `spark/<pinned tag>`, `os/<sysname>` and `r/<R version>`,
-percent-encoded, at most 2,048 characters.
+space-separated as PySpark's, with the user agent at most 2,048
+characters once percent-encoded (the value itself is sent as written,
+as PySpark sends it).
+
+The client also checks both ids on every response (*decided
+2026-11-05*, after PySpark's response-integrity check): a `session_id`
+that is not the client's, or a `server_side_session_id` different from
+the first one seen, is a `zuspark_session_error`, as is any call on a
+released connection.
 
 `spark_connect()` sends one `Config` with `get_all` to prove the channel,
 the credential and the session, and one `AnalyzePlan.SparkVersion`. A
