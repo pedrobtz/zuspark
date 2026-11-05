@@ -22,9 +22,11 @@ response_header <- c("session_id", "server_side_session_id", "operation_id", "re
 # member other than the header. Returns a list of `operation_id`,
 # `responses` (how many), `reattaches`, `skipped` (responses of unknown
 # types), `schema`, `metrics` and `observed_metrics`.
-execute_plan <- function(con, plan, on_response = function(response) NULL) {
+execute_plan <- function(con, plan, on_response = function(response) NULL,
+                         on_operation = function(op) NULL) {
   check_open(con)
   op <- new_operation_id()
+  on_operation(op)
   run <- new.env(parent = emptyenv())
   run$last_response_id <- NULL
   run$unreleased <- 0L
@@ -101,7 +103,12 @@ read_execute_stream <- function(con, op, stream, run, on_response) {
   repeat {
     response <- tryCatch(
       stream$next_response(),
-      zugrpc_error_transport = function(e) e
+      zugrpc_error_transport = function(e) e,
+      # Ctrl-C while waiting: the call is cancelled and the server told to
+      # stop the job (design §7.9). zugrpc may deliver it as its own
+      # condition or leave R's interrupt as it is.
+      zugrpc_error_interrupt = function(e) interrupt_execution(con, op, stream),
+      interrupt = function(e) interrupt_execution(con, op, stream)
     )
     if (inherits(response, "condition")) {
       return(response)
