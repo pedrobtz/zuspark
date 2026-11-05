@@ -13,8 +13,9 @@ library(zuspark)
 
 ## Connect
 
-`spark_connect()` takes an `sc://` connection string, by default the one
-in the `SPARK_REMOTE` environment variable. A local Spark Connect server
+[`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
+takes an `sc://` connection string, by default the one in the
+`SPARK_REMOTE` environment variable. A local Spark Connect server
 listens on port 15002.
 
 ``` r
@@ -75,10 +76,12 @@ stream <- spark_fetch(q)
 
 ## Settings, interrupts and disconnecting
 
-`spark_config()` reads the session’s settings, or sets them by name.
-`spark_interrupt()` stops a running query on the server, or every
-operation when given no query. `spark_disconnect()` releases the
-session.
+[`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md)
+reads the session’s settings, or sets them by name. `spark_interrupt()`
+stops a running query on the server, or every operation when given no
+query.
+[`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
+releases the session.
 
 ``` r
 

@@ -33,14 +33,20 @@ recorded there, not here.
 
 ## Current state
 
-Stage 0 done 2026-11-05: the package’s identity, no compiled code, and
-the Spark Connect descriptor set pinned at Spark `v4.2.1`. No
-user-facing function exists yet. The roadmap in `.agents/roadmap.md`
-takes it to v0.1.0. Release is gated on five siblings reaching CRAN
-(design §4). None is on CRAN yet; `zugrpc` (verified 2026-11-05 at
-`ba9d83b`) already works against live Spark on `zuhttp`’s and
-`zuproto`’s `main`, and its own release waits on zuhttp#40 and
-zuproto#13. Its R API can still change before then.
+Stages 0 and 1 done 2026-11-05: the descriptor set pinned at Spark
+`v4.2.1`, and sessions:
+[`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md),
+[`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md),
+[`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md),
+[`spark_version()`](https://pedrobtz.github.io/zuspark/reference/spark_version.md),
+[`spark_session_id()`](https://pedrobtz.github.io/zuspark/reference/spark_version.md),
+[`zuspark_info()`](https://pedrobtz.github.io/zuspark/reference/zuspark_info.md).
+No SQL yet (Stage 2). The roadmap in `.agents/roadmap.md` takes it to
+v0.1.0. Release is gated on five siblings reaching CRAN (design §4).
+None is on CRAN yet; `zugrpc` (verified 2026-11-05 at `ba9d83b`) already
+works against live Spark on `zuhttp`’s and `zuproto`’s `main`, and its
+own release waits on zuhttp#40 and zuproto#13. Its R API can still
+change before then.
 
 ## Versions and dependents
 
@@ -53,6 +59,20 @@ does: none.
 The siblings come from GitHub until they reach CRAN, through `Remotes:`;
 `pak::pak("pedrobtz/zugrpc")` also pulls `zuhttp` and `zuproto`.
 
+The live tests need a Spark Connect 4.2.1 server; without Docker, Podman
+runs the same image:
+
+``` sh
+podman run -d --name spark -p 15002:15002 -e SPARK_NO_DAEMONIZE=true \
+  docker.io/apache/spark:4.2.1 /opt/spark/sbin/start-connect-server.sh \
+  --conf spark.connect.grpc.binding.address=0.0.0.0
+ZUSPARK_TEST_REMOTE=sc://localhost:15002 Rscript -e 'devtools::test()'
+Rscript tools/record-fixtures.R sc://localhost:15002   # re-record fixtures
+```
+
+Re-record the fixtures when a stage adds an RPC scenario or the request
+shape changes, and commit them with the change.
+
 `sh tools/build-descriptors.sh` rebuilds
 `inst/proto/spark-connect.binpb` and `inst/proto/VERSION` (needs `curl`
 and `protoc`). It is occasional: run it only when a pin at its top
@@ -61,10 +81,27 @@ changes, and commit the set, `VERSION` and `NOTICE` together;
 
 ## Architecture
 
-To be written as stages land; see `.agents/design.md`. So far:
-[R/proto.R](https://pedrobtz.github.io/zuspark/R/proto.R) loads the
-shipped descriptor set into one zuproto pool per session
-(`spark_pool()`), which every message is encoded and decoded with.
+See `.agents/design.md` for the why; this is the where.
+
+- [R/proto.R](https://pedrobtz.github.io/zuspark/R/proto.R) loads the
+  shipped descriptor set into one zuproto pool per R session
+  (`spark_pool()`).
+- [R/transport.R](https://pedrobtz.github.io/zuspark/R/transport.R):
+  every RPC goes through `spark_rpc()`, which encodes, calls
+  `con$transport` and decodes. The transport is bound when the
+  connection is made: normally a unary `zugrpc` call, in tests the fake
+  channel from the `zuspark.transport` option. The `zuspark.record`
+  option writes each call’s bytes for the fixtures.
+- [R/url.R](https://pedrobtz.github.io/zuspark/R/url.R) parses `sc://`
+  strings; [R/session.R](https://pedrobtz.github.io/zuspark/R/session.R)
+  holds the connection, an environment of class `zuspark_connection`, so
+  the server-side id and the released flag are shared by every copy;
+  [R/config.R](https://pedrobtz.github.io/zuspark/R/config.R) is
+  [`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md).
+- [R/conditions.R](https://pedrobtz.github.io/zuspark/R/conditions.R):
+  `zuspark_abort()` raises every `zuspark_error`, base R conditions
+  only.
+
 Licences of the bundled protocol files are in
 [inst/COPYRIGHTS](https://pedrobtz.github.io/zuspark/inst/COPYRIGHTS).
 
@@ -77,6 +114,13 @@ Licences of the bundled protocol files are in
   time** (D4). It ships compiled in `inst/proto/`, pinned to the Spark
   tag of the live-test image with its SHA-256 recorded; the two are
   re-pinned together, and re-pinning re-runs the proto snapshots.
+- **Every request goes through `session_fields()`**, which carries the
+  session id, user context and client type, and refuses a released
+  connection; every response goes through `observe_session()`. A new RPC
+  that skips either loses the session checks of design §7.2.
+- **The transport is read from `con$transport`, never from the option at
+  call time.** A finalizer runs after the test that set the option has
+  gone; binding at connect is what keeps it off the network.
 - **No type conversion of `zuspark`’s own** (D10). Every row goes to
   `zuarrow` untouched, timestamps included; the R edge is `zuarrow`’s
   `lossy` rule.
@@ -86,20 +130,33 @@ Licences of the bundled protocol files are in
 
 ## Testing
 
-The conformance oracle is PySpark: recorded request and response
-fixtures replayed through a fake channel on every leg, live Spark
-Connect in a container on the Ubuntu legs only (design §9), since only
-Ubuntu runners have Docker. None of it exists yet; the live job will
-start from zugrpc’s `live.yaml` recipe (design §9). A gap found in
-`zugrpc` while testing is filed there as a zugrpc issue, not worked
-around here. Add the helpers and the suite’s runtime here as stages
-land. The conventions every package follows are in
-`.claude/shared/r-package.md`.
+The conformance oracle is PySpark and the live server: recorded request
+and response fixtures replayed through a fake channel on every leg, live
+Spark Connect in a container on the Ubuntu legs only (design §9), since
+only Ubuntu runners have Docker.
+
+- [helper-fixtures.R](https://pedrobtz.github.io/zuspark/tests/testthat/helper-fixtures.R):
+  `local_replay()` replays a scenario of `tests/testthat/fixtures/` in
+  order, failing on a call out of order, and collects the decoded
+  requests; `responses` overrides a recorded answer by call number
+  (bytes, or a function that may signal), which is how version, session
+  and status cases are made without recording them. `replay_connect()`
+  connects with the scenario’s recorded session id.
+- [helper-live.R](https://pedrobtz.github.io/zuspark/tests/testthat/helper-live.R):
+  `test-live-*.R` run only with `ZUSPARK_TEST_REMOTE` set;
+  `tools/ci-live-tests.R` runs them in `live.yaml` and fails if one
+  skips. The suite takes about ten seconds locally. A gap found in
+  `zugrpc` while testing is filed there as a zugrpc issue, not worked
+  around here. Add the helpers and the suite’s runtime here as stages
+  land. The conventions every package follows are in
+  `.claude/shared/r-package.md`.
 
 ## Continuous integration
 
 `R-CMD-check.yaml` and `coverage.yaml` call the shared
 `pedrobtz/r-actions` workflows at `@v1`; `pkgdown.yaml` builds and
-deploys the site with `r-lib/actions`. The stages marked `full` are
-listed in `.agents/roadmap.md`. What a change runs and what the CI
-labels do is in `.claude/shared/ci.md`.
+deploys the site with `r-lib/actions`. `live.yaml` is this package’s
+own: it starts Spark Connect 4.2.1 in Docker on Ubuntu and runs the live
+tests, because R CMD check never touches a network. The stages marked
+`full` are listed in `.agents/roadmap.md`. What a change runs and what
+the CI labels do is in `.claude/shared/ci.md`.
