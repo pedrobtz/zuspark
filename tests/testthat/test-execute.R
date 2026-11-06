@@ -228,3 +228,32 @@ test_that("a failed release after ResultComplete keeps the result", {
   expect_identical(calls$methods[c(4, 6)], c("ReleaseExecute", "ReleaseExecute"))
   close_connection(con)
 })
+
+test_that("a reattach after a stream that failed before any response keeps its first response", {
+  # ExecutePlan fails before any response; the operation did arrive, so the
+  # reattach answers with the whole result. Its first response is read to
+  # decide whether the operation exists, and must still be consumed.
+  local_replay("sql-query")
+  con <- replay_connect("sql-query")
+  q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
+  recorded <- read_stream_fixture("sql-query", fixture_calls("sql-query")$stem[[5]])
+  # The reattach answers from the first batch on, so that losing its first
+  # response would lose rows.
+  is_batch <- vapply(decode_stream_fixture("sql-query", 5), function(r) !is.null(r$arrow_batch), logical(1))
+  from_batch <- recorded[seq(which(is_batch)[[1L]], length(recorded))]
+  release <- read_fixture("sql-query", fixture_calls("sql-query")$stem[[6]], "response")
+  sent <- character()
+  con$transport <- function(con, method, bytes, deadline, streaming = FALSE) {
+    sent <<- c(sent, method)
+    switch(method,
+      ExecutePlan = replay_stream(list(grpc_transport_condition())),
+      ReattachExecute = replay_stream(from_batch),
+      ReleaseExecute = release
+    )
+  }
+  df <- spark_collect(q)
+  expect_identical(df$id, as.numeric(0:4))
+  expect_identical(q$rows, 5)
+  expect_identical(sent, c("ExecutePlan", "ReattachExecute", "ReleaseExecute"))
+  close_connection(con)
+})
