@@ -28,7 +28,7 @@ benchmarks.
 | 4 | [Errors, interrupts and deadlines](#stage-4--errors-interrupts-and-deadlines) | quick | [#6](https://github.com/pedrobtz/zuspark/issues/6) | [#19](https://github.com/pedrobtz/zuspark/pull/19) | 2026-11-05 |
 | 5 | [Databricks](#stage-5--databricks) | quick | [#7](https://github.com/pedrobtz/zuspark/issues/7) | [#20](https://github.com/pedrobtz/zuspark/pull/20) | 2026-11-06 |
 | 6 | [Live suite, hostile responses and benchmarks](#stage-6--live-suite-hostile-responses-and-benchmarks) | full | [#8](https://github.com/pedrobtz/zuspark/issues/8) | [#21](https://github.com/pedrobtz/zuspark/pull/21) | 2026-11-06 |
-| 7 | [Documentation](#stage-7--documentation) | quick | [#9](https://github.com/pedrobtz/zuspark/issues/9) | | |
+| 7 | [Documentation](#stage-7--documentation) | quick | [#9](https://github.com/pedrobtz/zuspark/issues/9) | | 2026-11-06 |
 | 8 | [Full CI](#stage-8--full-ci) | full | [#10](https://github.com/pedrobtz/zuspark/issues/10) | | |
 | 9 | [v0.1.0 readiness](#stage-9--v010-readiness) | full | [#11](https://github.com/pedrobtz/zuspark/issues/11) | | |
 | 10 | [Review](#stage-10--review) | full | [#12](https://github.com/pedrobtz/zuspark/issues/12) | | |
@@ -306,6 +306,13 @@ crashes, and §10's targets are measured.
 - Every example and article chunk runs against the 4.2.1 container.
 - `R CMD check` passes on the quick profile with no server reachable.
 - The pkgdown site builds with both articles in the navbar.
+
+**Deviation (2026-11-06).** The "Connect to Databricks" article (Stage 5,
+written at the maintainer's request with its chunks not evaluated) and
+`spark_connect_databricks()`'s example need a Databricks workspace, so
+they are the exception to the first criterion; they were run by hand
+against Free Edition in Stage 5. Every other chunk and example runs in
+`pkgdown.yaml`, which starts Spark 4.2.1 for the site build.
 
 **Design.** [§6](design.md#6-public-r-api-v010-shape),
 [§7.6](design.md#76-the-duckdb-hand-off).
