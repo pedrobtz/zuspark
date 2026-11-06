@@ -109,7 +109,21 @@ test_that("a missing host is reported against the string as given", {
 })
 
 test_that("a parameter with two equal signs is not a key-value pair", {
-  expect_error(parse_spark_url("sc://h/;a=b=c"), "'a=b=c'", class = "zuspark_url_error")
+  # Only the key is quoted: the value may be a credential.
+  expect_error(parse_spark_url("sc://h/;a=b=c"), "Parameter 'a' ", class = "zuspark_url_error")
+})
+
+test_that("parse errors never print the token", {
+  # A base64 token with padding has '=' in it.
+  err <- tryCatch(parse_spark_url("sc://host/;token=c2VjcmV0=="), error = identity)
+  expect_s3_class(err, "zuspark_url_error")
+  expect_false(grepl("c2VjcmV0", conditionMessage(err), fixed = TRUE))
+  expect_match(conditionMessage(err), "Parameter 'token' ", fixed = TRUE)
+
+  err <- tryCatch(parse_spark_url("sc://:15002/;token=SECRET123"), error = identity)
+  expect_s3_class(err, "zuspark_url_error")
+  expect_false(grepl("SECRET123", conditionMessage(err), fixed = TRUE))
+  expect_match(conditionMessage(err), "'sc://:15002/;token=<redacted>'", fixed = TRUE)
 })
 
 test_that("a numeric parameter must be a number", {
