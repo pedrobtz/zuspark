@@ -324,13 +324,11 @@ append_url_params <- function(url, params) {
     url_abort("parameter", "Parameters in `...` must be named, such as `token = \"...\"`.")
   }
   values <- vapply(params, function(v) {
-    if (is.logical(v) && length(v) == 1L && !is.na(v)) {
-      return(tolower(as.character(v)))
-    }
-    if (!(is.character(v) || is.numeric(v)) || length(v) != 1L || is.na(v)) {
+    text <- scalar_text(v)
+    if (is.null(text)) {
       url_abort("parameter", "Each parameter in `...` must be a single string, number or logical.")
     }
-    as.character(v)
+    text
   }, character(1))
   tail <- paste0(";", keys, "=", vapply(values, utils::URLencode, "", reserved = TRUE), collapse = "")
   # Parameters follow the path's ';'; a URL without a path gets "/".

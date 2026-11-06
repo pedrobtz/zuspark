@@ -199,3 +199,23 @@ test_that("a session id with attributes, such as zuid's uuid, is kept as a plain
   expect_identical(spark_session_id(con)[["client"]], fixture_session_id("connect"))
   expect_true(spark_disconnect(con))
 })
+
+test_that("numbers reach the server in full, not in scientific notation", {
+  expect_identical(config_value(100000), "100000")
+  expect_identical(config_value(1e15), "1000000000000000")
+  expect_identical(config_value(0.25), "0.25")
+  expect_identical(config_value(7L), "7")
+  expect_identical(config_value(TRUE), "true")
+  expect_identical(config_value("x"), "x")
+  expect_identical(
+    append_url_params("sc://h", list(grpc_max_message_size = 2e8)),
+    "sc://h/;grpc_max_message_size=200000000"
+  )
+})
+
+test_that("NA and non-finite values are refused as settings and parameters", {
+  for (v in list(NA, NA_real_, NA_character_, Inf, NaN, c(1, 2), list(1))) {
+    expect_error(config_value(v), class = "zuspark_error")
+    expect_error(append_url_params("sc://h", list(x = v)), class = "zuspark_url_error")
+  }
+})
