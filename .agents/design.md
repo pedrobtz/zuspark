@@ -440,7 +440,11 @@ string is a `zuspark_url_error` naming the part, with PySpark's four
 messages as the test cases. *2026-11-05:* PySpark's missing-host
 message quotes its internal `http://` rewrite of the string; zuspark's
 quotes the string as given. A malformed port, which Python reports as a
-`ValueError`, is a fifth `zuspark_url_error` (part `port`).
+`ValueError`, is a fifth `zuspark_url_error` (part `port`). *2026-11-06 (#31):* a value with an invalid
+percent-escape, or `%00`, is a `zuspark_url_error` (part `parameter`)
+rather than the changed value `utils::URLdecode()` returns, and an empty
+`token=` is one too (part `token`), since either would still send an
+`authorization` header.
 
 ### 7.2 Sessions
 
