@@ -1,7 +1,5 @@
 # Reattachable execution and result checks (design §7.4, §7.5).
 
-reattach_sql <- "SELECT id FROM range(1000)"
-
 test_that("a result the server cut is reattached, every row once", {
   calls <- local_replay("reattach")
   con <- replay_connect("reattach")
