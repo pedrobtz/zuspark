@@ -1,0 +1,204 @@
+
+$5f9392c0-cfa5-430a-9154-2d54107b2f7c"å4
+Á
+PhotonResultStageµ8µ8"H
+serializedDataTypeProtoSize)
+serialized data type proto size
+size"/
+peakMemUsage
+peak memory usage‡£–€size")
+stageDuration
+stage durationtiming"<
+peakUntrackedMemUsage#
+peak untracked memory usagesize"@
+serializedPlanProtoSize%
+serialized plan proto size›size"/
+numOutputRows
+number of output rowssum"O
+peakBufferPoolReservedMemory/
+peak BufferPool reserved memory€€€@maximum
+á
+PhotonColumnarToRow´8µ8"&
+bytesCopied
+bytes copiedÈsize"=
+expressionEvalRootCount"
+expression evaluation rootssum"E
+neutrinoEvalFilterBatches(
+!neutrino filter batches evaluatedsum"-
+	cumulTime 
+cumulative time•ÙnsTiming"I
+neutrinoFallbackColExprs-
+&neutrino col exprs fell back to nativesum"o
+%neutrinoFirstUnsupportedFilterExprTagF
+0first unsupported neutrino filter expression tagÿÿÿÿÿÿÿÿÿminimum"s
+"columnToRowMemoryReservationTimeNsM
+=time taken to reserve memory for the column to row conversionï¨nsTiming"O
+expressionEvalInputActiveRows.
+'expression evaluation active input rowssum"?
+neutrinoEvalColBatches%
+neutrino col batches evaluatedsum" 
+numTasks
+tasks totalsum">
+expressionEvalTimeNs&
+expression evaluation timensTiming"i
+"neutrinoFirstUnsupportedColExprTagC
+-first unsupported neutrino col expression tagÿÿÿÿÿÿÿÿÿminimum"/
+exclusiveTime
+exclusive time¦¬nsTiming"A
+neutrinoBuildTimeNs*
+neutrino expression build timensTiming"G
+filterEvalInputActiveRows*
+#filter evaluation active input rowssum"5
+numOutputBatches!
+number of output batchessum"Y
+%expressionEvalMetricsSuppressionCount0
+)expression metric suppression occurrencessum"/
+numOutputRows
+number of output rowssum">
+neutrinoBuildFilterExprs"
+neutrino filter exprs builtsum"O
+neutrinoFallbackFilterExprs0
+)neutrino filter exprs fell back to nativesum"S
+expressionEvalMaxDepth9
+#maximum expression evaluation depthÿÿÿÿÿÿÿÿÿmaximum"M
+expressionEvalInputTotalRows-
+&expression evaluation total input rowssum"I
+filterEvalOutputActiveRows+
+$filter evaluation active output rowssum"O
+columnToRowPivotTimeNs5
+%time taken to convert columns to rowsÃŒnsTiming"?
+numBufferReallocations%
+number of buffer reallocationssum"'
+numEarlyClose
+num early closesum"0
+maxBytesPerRow
+max bytes per row(maximum"8
+neutrinoBuildColExprs
+neutrino col exprs builtsum"0
+peakMemoryUsage
+peak memory usageÈsize
+ò
+PhotonProject²8´8"W
+jniFallbackEvaluationTimeNs8
+,jni fallback expression evaluation time (ns)nsTiming"M
+!variantBuilderNestedByteSizeBound(
+ variant nested - total byte sizesize"o
+%neutrinoFirstUnsupportedFilterExprTagF
+0first unsupported neutrino filter expression tagÿÿÿÿÿÿÿÿÿminimum"K
+!variantBuilderTopLevelNumVariants&
+variant top-level - total countsum"U
+variantBuilderTopLevelMaxDepth3
+variant top-level - max depthÿÿÿÿÿÿÿÿÿmaximum"Q
+expressionEvalInputActiveRows0
+'expression evaluation active input rows
+sum"?
+neutrinoEvalColBatches%
+neutrino col batches evaluatedsum" 
+numTasks
+tasks totalsum"I
+filterEvalOutputActiveRows+
+$filter evaluation active output rowssum"'
+numEarlyClose
+num early closesum"0
+exclusiveTime
+exclusive timeµ‚ÂnsTiming"8
+neutrinoBuildColExprs
+neutrino col exprs builtsum"A
+neutrinoBuildTimeNs*
+neutrino expression build timensTiming"G
+filterEvalInputActiveRows*
+#filter evaluation active input rowssum"R
+variantBuilderTopLevelNumPaths0
+)variant top-level - total number of pathssum"R
+#variantBuilderTopLevelByteSizeBound+
+#variant top-level - total byte sizesize"5
+numOutputBatches!
+number of output batchessum"[
+%expressionEvalMetricsSuppressionCount2
+)expression metric suppression occurrencessum"?
+expressionEvalRootCount$
+expression evaluation roots
+sum"\
+ variantBuilderTopLevelNumScalars8
+1variant top-level - total number of scalar valuessum"E
+neutrinoEvalFilterBatches(
+!neutrino filter batches evaluatedsum"M
+variantBuilderNestedNumPaths-
+&variant nested - total number of pathssum"-
+	cumulTime 
+cumulative timeÛèÃnsTiming"P
+protonExpressionRoots7
+.total number of expression roots run in protoncount"I
+neutrinoFallbackColExprs-
+&neutrino col exprs fell back to nativesum">
+expressionRoots+
+ total number of expression rootscount"B
+expressionEvalTimeNs*
+expression evaluation timeêÔnsTiming"F
+variantBuilderNestedNumVariants#
+variant nested - total countsum"W
+variantBuilderNestedNumScalars5
+.variant nested - total number of scalar valuessum"/
+numOutputRows
+number of output rowssum">
+neutrinoBuildFilterExprs"
+neutrino filter exprs builtsum"O
+neutrinoFallbackFilterExprs0
+)neutrino filter exprs fell back to nativesum"i
+"neutrinoFirstUnsupportedColExprTagC
+-first unsupported neutrino col expression tagÿÿÿÿÿÿÿÿÿminimum"P
+variantBuilderNestedMaxDepth0
+variant nested - max depthÿÿÿÿÿÿÿÿÿmaximum"J
+expressionEvalMaxDepth0
+#maximum expression evaluation depthmaximum"O
+expressionEvalInputTotalRows/
+&expression evaluation total input rows
+sum
+Å
+PhotonRange°8²8"=
+expressionEvalRootCount"
+expression evaluation rootssum"E
+neutrinoEvalFilterBatches(
+!neutrino filter batches evaluatedsum",
+	cumulTime
+cumulative time¦ænsTiming"I
+neutrinoFallbackColExprs-
+&neutrino col exprs fell back to nativesum"o
+%neutrinoFirstUnsupportedFilterExprTagF
+0first unsupported neutrino filter expression tagÿÿÿÿÿÿÿÿÿminimum"O
+expressionEvalInputActiveRows.
+'expression evaluation active input rowssum"?
+neutrinoEvalColBatches%
+neutrino col batches evaluatedsum" 
+numTasks
+tasks totalsum">
+expressionEvalTimeNs&
+expression evaluation timensTiming"i
+"neutrinoFirstUnsupportedColExprTagC
+-first unsupported neutrino col expression tagÿÿÿÿÿÿÿÿÿminimum"I
+filterEvalOutputActiveRows+
+$filter evaluation active output rowssum"'
+numEarlyClose
+num early closesum"/
+exclusiveTime
+exclusive time¦ænsTiming"8
+neutrinoBuildColExprs
+neutrino col exprs builtsum"A
+neutrinoBuildTimeNs*
+neutrino expression build timensTiming"G
+filterEvalInputActiveRows*
+#filter evaluation active input rowssum"5
+numOutputBatches!
+number of output batchessum"Y
+%expressionEvalMetricsSuppressionCount0
+)expression metric suppression occurrencessum"/
+numOutputRows
+number of output rowssum">
+neutrinoBuildFilterExprs"
+neutrino filter exprs builtsum"O
+neutrinoFallbackFilterExprs0
+)neutrino filter exprs fell back to nativesum"S
+expressionEvalMaxDepth9
+#maximum expression evaluation depthÿÿÿÿÿÿÿÿÿmaximum"M
+expressionEvalInputTotalRows-
+&expression evaluation total input rowssumb$91d0e7ad-ef4b-414c-be8c-9dac142585b1j$97013ead-bd16-43c2-90ee-03acc80f6368z$a9fd2ec8-01c1-43c3-a725-72bea53674e5
