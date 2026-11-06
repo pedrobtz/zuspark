@@ -6,7 +6,11 @@
 # * https://r-pkgs.org/testing-design.html#sec-tests-files-overview
 # * https://testthat.r-lib.org/articles/special-files.html
 
-library(testthat)
-library(zuspark)
+# testthat and withr are in Suggests: without them (CRAN's NOSUGGESTS
+# check), the tests are skipped rather than failing.
+if (requireNamespace("testthat", quietly = TRUE) && requireNamespace("withr", quietly = TRUE)) {
+  library(testthat)
+  library(zuspark)
 
-test_check("zuspark")
+  test_check("zuspark")
+}
