@@ -40,7 +40,9 @@ Stages 0 to 4 done 2026-11-05: the descriptor set pinned at Spark
 interrupts and `spark_interrupt()` (Stage 4). Stage 5, 2026-11-06:
 `spark_connect_databricks()`, checked on a Databricks Free Edition
 workspace (serverless only; classic clusters untested), with findings in
-`.agents/databricks.md`. Exact conversion of `int64`, `decimal128`
+`.agents/databricks.md`. Stage 6, 2026-11-06: the live suite covers
+§7 and §8, hostile responses are tested, and §10's benchmarks are in
+`.agents/benchmarks.md`. Exact conversion of `int64`, `decimal128`
 and the time types waits on zuint, decimal and zutempo registering with
 zuarrow (zuint#52, decimal#24, zutempo#94). The
 roadmap in
@@ -91,6 +93,12 @@ The `databricks` fixture comes from a workspace instead, by
 set; it scrubs the workspace's names and fails if one survives. Keep the
 credentials outside the repository (`.zuspark-databricks.env` is ignored
 in case a copy lands here).
+
+`tools/run-benchmarks.R <remote> <python>` measures design §10 against
+PySpark (`tools/benchmarks.py`, in a venv with `pyspark-client==4.2.1`
+and `pyarrow`) and prints the table for `.agents/benchmarks.md`. The
+10^7-row rows need a server with `--driver-memory 3g`; the default 1g
+runs out of heap.
 
 Re-record the fixtures when a stage adds an RPC scenario or the request
 shape changes, and commit them with the change.
@@ -188,7 +196,11 @@ only Ubuntu runners have Docker.
   with `ZUSPARK_TEST_REMOTE` set, and the reattach test only with
   `ZUSPARK_TEST_REMOTE_CUT`, a server that cuts streams (see Commands);
   `tools/ci-live-tests.R` runs them in `live.yaml` and fails if one
-  skips. The fixture suite takes about ten seconds; the live
+  skips.
+- [test-hostile.R](tests/testthat/test-hostile.R) replays `sql-query`
+  with one response truncated, flipped or given oversized counts; a
+  malformed message must be a `zuspark_protocol_error`, and any damage
+  must end in a result or a `zuspark_error`. It takes about five seconds. The fixture suite takes about ten seconds; the live
   `range(10^8)` reattach test about a minute.
 
 A gap found in `zugrpc` while testing is filed there as a zugrpc issue,

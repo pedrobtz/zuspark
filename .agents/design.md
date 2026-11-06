@@ -632,7 +632,9 @@ without a zone, as `POSIXct` under every `lossy` policy, so the
 `decimal` and `zutempo` registers its exact targets with `zuarrow` yet
 (zuint#52, decimal#24, zutempo#94), so the "exact with" column holds
 only once they do; until then `lossy = "character"` gives exact text
-and `lossy = "allow"` the widened value.
+and `lossy = "allow"` the widened value. *Decided 2026-11-06:* exact
+conversion is not part of 0.1.0; it comes in a later version, once the
+three packages register, with no change to zuspark (D10).
 
 `zuspark` adds nothing to this table: `zuarrow`'s exact-or-error rule
 (its §6.3) is the R edge. A `BIGINT` column with a value beyond 2⁵³ in
@@ -836,6 +838,13 @@ container on the same machine, recorded in `.agents/benchmarks.md`.
 Guesses until Stage 2 measures PySpark; the transport and decoding are
 the siblings', so a missed target is theirs to profile and this RFC's
 to record.
+
+*Measured 2026-11-06 (Stage 6), in [benchmarks.md](benchmarks.md):*
+connect (65 ms) and the round trip (0.92× of PySpark) are met. The
+10⁷-row collect is 1.78× of `toArrow()`, in zugrpc's stream reading
+(zugrpc#55), and 0.76× of `toPandas()`. The two memory rows are not met
+by §7.5's design, which holds every batch's IPC bytes in R before
+decoding; batch-by-batch decoding is §14's chunked results.
 
 ## 11. Roadmap
 

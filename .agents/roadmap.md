@@ -27,7 +27,7 @@ benchmarks.
 | 3 | [Schema and types](#stage-3--schema-and-types) | quick | [#5](https://github.com/pedrobtz/zuspark/issues/5) | [#18](https://github.com/pedrobtz/zuspark/pull/18) | 2026-11-05 |
 | 4 | [Errors, interrupts and deadlines](#stage-4--errors-interrupts-and-deadlines) | quick | [#6](https://github.com/pedrobtz/zuspark/issues/6) | [#19](https://github.com/pedrobtz/zuspark/pull/19) | 2026-11-05 |
 | 5 | [Databricks](#stage-5--databricks) | quick | [#7](https://github.com/pedrobtz/zuspark/issues/7) | [#20](https://github.com/pedrobtz/zuspark/pull/20) | 2026-11-06 |
-| 6 | [Live suite, hostile responses and benchmarks](#stage-6--live-suite-hostile-responses-and-benchmarks) | full | [#8](https://github.com/pedrobtz/zuspark/issues/8) | | |
+| 6 | [Live suite, hostile responses and benchmarks](#stage-6--live-suite-hostile-responses-and-benchmarks) | full | [#8](https://github.com/pedrobtz/zuspark/issues/8) | [#21](https://github.com/pedrobtz/zuspark/pull/21) | 2026-11-06 |
 | 7 | [Documentation](#stage-7--documentation) | quick | [#9](https://github.com/pedrobtz/zuspark/issues/9) | | |
 | 8 | [Full CI](#stage-8--full-ci) | full | [#10](https://github.com/pedrobtz/zuspark/issues/10) | | |
 | 9 | [v0.1.0 readiness](#stage-9--v010-readiness) | full | [#11](https://github.com/pedrobtz/zuspark/issues/11) | | |
@@ -387,6 +387,12 @@ fixed. No new features. Only submission is left when it closes.
 
 ## After 0.1.0
 
+- [§7.7](design.md#77-types): exact conversion with `zuint`, `decimal`
+  and `zutempo` loaded. Deferred 2026-11-06 by the maintainer: 0.1.0
+  ships with `lossy` (error, text or widened) as the only R edge for
+  `BIGINT` beyond 2⁵³, `DECIMAL` and the time types; the guarded checks
+  in `test-types.R` stay and run once each package registers with
+  `zuarrow` (zuint#52, decimal#24, zutempo#94).
 - [§14](design.md#14-later-versions-in-the-order-they-are-expected): the DBI
   shim and dbplyr, parameterised SQL, `spark_write()`, a Databricks
   control-plane client, `VARIANT` decoding, chunked results, `CloneSession`
