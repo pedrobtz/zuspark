@@ -81,7 +81,9 @@ from.</p></dd>
 list of <code>type</code> (the class hierarchy), <code>message</code>, <code>error_class</code>,
 <code>sql_state</code>, <code>message_parameters</code>, <code>cause</code> (the index of its cause in
 the list, or <code>NA</code>), <code>stack</code> (a data frame of <code>class</code>, <code>method</code>, <code>file</code>
-and <code>line</code>) and <code>contexts</code> (a data frame of the query fragments).</p>
+and <code>line</code>) and <code>contexts</code> (a data frame of the query fragments).
+When the server no longer holds the details, <code>spark_error_details()</code>
+raises a <code>zuspark_error</code> instead.</p>
     </div>
 
     <div class="section level2">

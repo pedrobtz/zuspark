@@ -30,7 +30,9 @@ A list with one element per exception, the root first. Each is a list of
 `type` (the class hierarchy), `message`, `error_class`, `sql_state`,
 `message_parameters`, `cause` (the index of its cause in the list, or
 `NA`), `stack` (a data frame of `class`, `method`, `file` and `line`)
-and `contexts` (a data frame of the query fragments).
+and `contexts` (a data frame of the query fragments). When the server no
+longer holds the details, `spark_error_details()` raises a
+`zuspark_error` instead.
 
 ## Examples
 
