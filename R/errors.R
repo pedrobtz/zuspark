@@ -67,6 +67,8 @@ with_zuspark_errors <- function(expr, con = NULL) {
 #'   `sql_state`, `message_parameters`, `cause` (the index of its cause in
 #'   the list, or `NA`), `stack` (a data frame of `class`, `method`, `file`
 #'   and `line`) and `contexts` (a data frame of the query fragments).
+#'   When the server no longer holds the details, `spark_error_details()`
+#'   raises a `zuspark_error` instead.
 #' @export
 #' @examplesIf nzchar(Sys.getenv("SPARK_REMOTE"))
 #' con <- spark_connect()
@@ -99,6 +101,15 @@ spark_error_details <- function(err, con = err$con) {
   )
   observe_session(con, response)
   errors <- response$errors
+  # The server keeps details only for a while, and answers an id it has
+  # dropped with no errors at all.
+  if (!length(errors)) {
+    zuspark_abort(
+      "zuspark_error",
+      sprintf("The server no longer holds details for error %s.", err$error_id),
+      error_id = err$error_id
+    )
+  }
   root <- response$root_error_idx %||% 0
   order <- c(root, setdiff(seq_along(errors) - 1, root))
   lapply(errors[order + 1], function(e) error_detail(e, order))
