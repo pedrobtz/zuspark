@@ -1,11 +1,38 @@
 # zuspark
 
-The goal of zuspark is to …
+[Spark
+Connect](https://spark.apache.org/docs/latest/spark-connect-overview.html)
+lets a client run Spark SQL on a remote cluster over gRPC. Until now,
+reaching it from R meant a local Spark installation and its JVM, or a
+Python environment in between.
+
+zuspark is a Spark Connect client written in R. It connects to an
+`sc://` endpoint, runs SQL there and brings the result back as Arrow or
+as a data frame, with no JVM, no Python and no Spark installation on
+your machine.
+
+- **Only R packages.** gRPC, protocol buffers and Arrow come from
+  [zugrpc](https://github.com/pedrobtz/zugrpc),
+  [zuproto](https://github.com/pedrobtz/zuproto) and
+  [zuarrow](https://github.com/pedrobtz/zuarrow); zuspark itself has no
+  compiled code.
+- **Spark’s own protocol.** The message definitions ship with the
+  package, pinned to Spark 4.2.1, and the connection string is
+  PySpark’s.
+- **Exact by default.** A value R cannot hold exactly is an error, not a
+  silent rounding; you choose its text or a widened type instead.
+- **Results that survive a cut.** Long results are read with
+  reattachable execution: a stream cut by a proxy or a timeout resumes
+  where it stopped, and the server’s buffer is released as the rows are
+  read.
+- **Databricks too.**
+  [`spark_connect_databricks()`](https://pedrobtz.github.io/zuspark/reference/spark_connect_databricks.md)
+  connects to a workspace’s serverless compute or to a cluster.
 
 ## Installation
 
-You can install the development version of zuspark from
-[GitHub](https://github.com/) with:
+zuspark is not on CRAN yet. Install the development version from GitHub;
+pak also installs its dependencies, which are on GitHub too:
 
 ``` r
 
@@ -13,51 +40,162 @@ You can install the development version of zuspark from
 pak::pak("pedrobtz/zuspark")
 ```
 
-## Example
-
-This is a basic example which shows you how to solve a common problem:
+## Usage
 
 ``` r
 
 library(zuspark)
-## basic example code
 ```
+
+Connect to a Spark Connect server. A local one listens on port 15002;
+[`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
+with no argument reads the `SPARK_REMOTE` environment variable.
+
+``` r
+
+con <- spark_connect("sc://localhost:15002")
+spark_version(con)
+#> [1] "4.2.1"
+```
+
+[`spark_sql()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
+sends a query and returns it unexecuted;
+[`spark_collect()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+runs it and returns a data frame.
+
+``` r
+
+q <- spark_sql(con, "SELECT id, id % 3 AS bucket, CAST(id AS STRING) AS label FROM range(6)")
+spark_collect(q)
+#>   id bucket label
+#> 1  0      0     0
+#> 2  1      1     1
+#> 3  2      2     2
+#> 4  3      0     3
+#> 5  4      1     4
+#> 6  5      2     5
+```
+
+The work happens on the server: here Spark aggregates ten million rows,
+and only seven come back.
+
+``` r
+
+spark_collect(spark_sql(con, "
+  SELECT id % 7 AS weekday, count(*) AS n
+  FROM range(10000000)
+  GROUP BY weekday
+  ORDER BY weekday
+"))
+#>   weekday       n
+#> 1       0 1428572
+#> 2       1 1428572
+#> 3       2 1428572
+#> 4       3 1428571
+#> 5       4 1428571
+#> 6       5 1428571
+#> 7       6 1428571
+```
+
+Spark’s errors keep Spark’s error class and SQLSTATE.
+
+``` r
+
+err <- tryCatch(spark_sql(con, "SELECT * FROM sales"), error = identity)
+err$error_class
+#> [1] "TABLE_OR_VIEW_NOT_FOUND"
+err$sql_state
+#> [1] "42P01"
+```
+
+``` r
+
+spark_disconnect(con)
+```
+
+Every function but
+[`zuspark_info()`](https://pedrobtz.github.io/zuspark/reference/zuspark_info.md)
+starts with `spark_`, and every one after
+[`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
+takes the connection, a query or an error first.
+
+## Learn more
+
+- [Get
+  started](https://pedrobtz.github.io/zuspark/articles/zuspark.html):
+  connecting, running SQL, types, errors and settings.
+- [Spark without the
+  JVM](https://pedrobtz.github.io/zuspark/articles/spark-without-the-jvm.html):
+  what zuspark is made of, and a Spark result handed to DuckDB.
+- [Connect to
+  Databricks](https://pedrobtz.github.io/zuspark/articles/databricks.html),
+  including Databricks Free Edition.
+- The [reference index](https://pedrobtz.github.io/zuspark/reference/).
+
+## Related work
+
+zuspark speaks the protocol defined by Apache Spark’s [Spark
+Connect](https://github.com/apache/spark/tree/master/sql/connect/common/src/main/protobuf)
+`.proto` files, and checks its results against PySpark’s. In R,
+[sparklyr](https://spark.posit.co/) reaches Spark Connect through
+[pysparklyr](https://github.com/mlverse/pysparklyr) and Python, and
+[SparkR](https://spark.apache.org/docs/latest/sparkr.html) through a
+local Spark;
+[spark-connect-go](https://github.com/apache/spark-connect-go) and
+[spark-connect-rust](https://github.com/apache/spark-connect-rust) are
+native clients in other languages.
 
 # Package index
 
-## All functions
+## Sessions
 
-- [`spark_collect()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
-  [`spark_fetch()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
-  [`as.data.frame(`*`<zuspark_query>`*`)`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
-  : Fetch a query's result
-- [`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md)
-  : Read and change the session's configuration
+Open, inspect and close a Spark Connect session.
+
 - [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
   [`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
   : Connect to a Spark Connect server
 - [`spark_connect_databricks()`](https://pedrobtz.github.io/zuspark/reference/spark_connect_databricks.md)
   : Connect to Databricks
+- [`spark_version()`](https://pedrobtz.github.io/zuspark/reference/spark_version.md)
+  [`spark_session_id()`](https://pedrobtz.github.io/zuspark/reference/spark_version.md)
+  : Inspect a session
+- [`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md)
+  : Read and change the session's configuration
+
+## SQL
+
+Run statements and read their results.
+
+- [`spark_sql()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
+  [`spark_execute()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
+  : Run SQL on the server
+- [`spark_collect()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+  [`spark_fetch()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+  [`as.data.frame(`*`<zuspark_query>`*`)`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
+  : Fetch a query's result
+- [`spark_schema()`](https://pedrobtz.github.io/zuspark/reference/spark_schema.md)
+  : A query's schema
+
+## Errors and interrupts
+
 - [`spark_error_details()`](https://pedrobtz.github.io/zuspark/reference/spark_error_details.md)
   : Spark's full account of an error
 - [`spark_interrupt()`](https://pedrobtz.github.io/zuspark/reference/spark_interrupt.md)
   : Interrupt operations on the server
-- [`spark_schema()`](https://pedrobtz.github.io/zuspark/reference/spark_schema.md)
-  : A query's schema
-- [`spark_sql()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
-  [`spark_execute()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
-  : Run SQL on the server
-- [`spark_version()`](https://pedrobtz.github.io/zuspark/reference/spark_version.md)
-  [`spark_session_id()`](https://pedrobtz.github.io/zuspark/reference/spark_version.md)
-  : Inspect a session
+
+## About the package
+
 - [`zuspark_info()`](https://pedrobtz.github.io/zuspark/reference/zuspark_info.md)
   : What zuspark was built with
+- [`zuspark`](https://pedrobtz.github.io/zuspark/reference/zuspark-package.md)
+  [`zuspark-package`](https://pedrobtz.github.io/zuspark/reference/zuspark-package.md)
+  : zuspark: Native Client for 'Spark Connect'
 
 # Articles
 
-### All vignettes
+### Articles
 
+- [Spark without the
+  JVM](https://pedrobtz.github.io/zuspark/articles/spark-without-the-jvm.md):
 - [Connect to
   Databricks](https://pedrobtz.github.io/zuspark/articles/databricks.md):
-- [Get started with
-  zuspark](https://pedrobtz.github.io/zuspark/articles/zuspark.md):

@@ -16,12 +16,16 @@ library(zuspark)
 [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
 takes an `sc://` connection string, by default the one in the
 `SPARK_REMOTE` environment variable. A local Spark Connect server
-listens on port 15002.
+listens on port 15002; this article runs against one.
 
 ``` r
 
-con <- spark_connect("sc://localhost:15002")
+con <- spark_connect()
+con
+#> <zuspark_connection> sc://127.0.0.1:15002 (Spark 4.2.1)
+#>   session: 35a1945e-b255-4868-91e0-40334c528978
 spark_version(con)
+#> [1] "4.2.1"
 ```
 
 Parameters go after a `;`. `token` sends a bearer token and turns TLS
@@ -32,6 +36,12 @@ on; any parameter zuspark doesn’t recognise is sent as a request header.
 con <- spark_connect("sc://spark.example.com:443/;token=my-token")
 ```
 
+For Databricks,
+[`spark_connect_databricks()`](https://pedrobtz.github.io/zuspark/reference/spark_connect_databricks.md)
+builds the string and the header the workspace needs; see the
+[Databricks
+article](https://pedrobtz.github.io/zuspark/articles/databricks.md).
+
 ## Run SQL
 
 [`spark_sql()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
@@ -40,8 +50,23 @@ the plan but no rows yet; nothing is read until you ask for it.
 
 ``` r
 
-q <- spark_sql(con, "SELECT id, id * 2 AS twice FROM range(10)")
+q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
+q
+#> <zuspark_query> SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)
+#>   on sc://127.0.0.1:15002 (not run yet)
+```
+
+[`spark_schema()`](https://pedrobtz.github.io/zuspark/reference/spark_schema.md)
+asks the server for the query’s types without running it. They are
+Spark’s types, as Spark names them.
+
+``` r
+
 spark_schema(q)
+#>    name   type nullable
+#> 1    id bigint    FALSE
+#> 2 twice bigint    FALSE
+#> 3     s string    FALSE
 ```
 
 Commands such as DDL, DML and `SET` run at once, and
@@ -50,53 +75,129 @@ returns the rows they produce as a data frame.
 
 ``` r
 
-spark_sql(con, "CREATE TEMPORARY VIEW small AS SELECT * FROM range(5)")
+spark_sql(con, "CREATE OR REPLACE TEMPORARY VIEW small AS SELECT * FROM range(3)")
+#> data frame with 0 columns and 0 rows
+spark_sql(con, "SHOW VIEWS")
+#>   namespace viewName isTemporary
+#> 1              small        TRUE
 ```
 
 ## Collect the result
 
 [`spark_collect()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
-runs the query and returns one data frame. Types that R can’t hold
-exactly, such as a `BIGINT` beyond 2^53, are an error by default;
-`lossy` chooses text or a widened type instead.
+runs the query and returns one data frame. It runs it again every time,
+so the result is always current.
 
 ``` r
 
-# Open: whether spark_collect() returns a plain data frame or a zutable
-# (the design proposes plain, unless a consumer asks).
 spark_collect(q)
-spark_collect(q, lossy = "character")
+#>   id twice s
+#> 1  0     0 0
+#> 2  1     2 1
+#> 3  2     4 2
+#> 4  3     6 3
+#> 5  4     8 4
+```
+
+Values that R can’t hold exactly, such as a `BIGINT` beyond 2^53, are an
+error by default. `lossy` chooses their exact text or a widened type
+instead.
+
+``` r
+
+big <- spark_sql(con, "SELECT 9007199254740993 AS id")
+conditionMessage(tryCatch(spark_collect(big), error = identity))
+#> [1] "Column `id` (Arrow format `l`) can't be converted to R exactly: row 1 holds 9007199254740993. Load zuint to read it exactly, or use `lossy = \"character\"` for its exact text, or `lossy = \"allow\"` to accept the loss."
+spark_collect(big, lossy = "character")
+#>                 id
+#> 1 9007199254740993
+spark_collect(big, lossy = "allow")
+#>             id
+#> 1 9.007199e+15
 ```
 
 [`spark_fetch()`](https://pedrobtz.github.io/zuspark/reference/spark_collect.md)
 returns the result as an Arrow stream instead, for code that consumes
-Arrow directly.
+Arrow directly, and
+[`spark_execute()`](https://pedrobtz.github.io/zuspark/reference/spark_sql.md)
+runs a statement only for its effect, returning the number of rows it
+produced.
 
 ``` r
 
 stream <- spark_fetch(q)
+zuarrow::arrow_schema(stream)
+#> <zuarrow_schema> struct<id: int64, twice: int64, s: string>
+n <- spark_execute(con, "SELECT * FROM range(1000000)")
+n
+#> [1] 1e+06
+```
+
+## Errors
+
+Spark’s errors arrive as a `zuspark_sql_error`, with Spark’s error class
+and SQLSTATE.
+[`spark_error_details()`](https://pedrobtz.github.io/zuspark/reference/spark_error_details.md)
+asks the server for the rest.
+
+``` r
+
+err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
+class(err)
+#> [1] "zuspark_sql_error"     "zuspark_error"         "zugrpc_error_internal"
+#> [4] "zugrpc_error_status"   "zugrpc_error"          "error"                
+#> [7] "condition"
+err$error_class
+#> [1] "TABLE_OR_VIEW_NOT_FOUND"
+err$sql_state
+#> [1] "42P01"
+details <- spark_error_details(err)
+names(details[[1]])
+#> [1] "type"               "message"            "error_class"       
+#> [4] "sql_state"          "message_parameters" "cause"             
+#> [7] "stack"              "contexts"
+head(details[[1]]$stack, 3)
+#>                                                            class
+#> 1            org.apache.spark.sql.errors.QueryCompilationErrors$
+#> 2 org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt
+#> 3           org.apache.spark.sql.catalyst.analysis.CheckAnalysis
+#>                              method                         file line
+#> 1 tableOrViewNotFoundWithSearchPath QueryCompilationErrors.scala  977
+#> 2                     tableNotFound                package.scala   94
+#> 3         $anonfun$checkAnalysis0$2          CheckAnalysis.scala  412
 ```
 
 ## Settings, interrupts and disconnecting
 
 [`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md)
-reads the session’s settings, or sets them by name.
+reads the session’s settings, or sets them by name and returns the
+values they had. An R interrupt (Ctrl-C, Esc) while a query runs stops
+it on the server;
 [`spark_interrupt()`](https://pedrobtz.github.io/zuspark/reference/spark_interrupt.md)
-stops a running query on the server, or every operation when given no
-query.
+stops every operation of the session.
 [`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
 releases the session.
 
 ``` r
 
-spark_config(con, spark.sql.session.timeZone = "UTC")
+old <- spark_config(con, spark.sql.session.timeZone = "UTC")
+old
+#> spark.sql.session.timeZone 
+#>                  "Etc/UTC"
+spark_config(con, "spark.sql.session.timeZone")
+#> spark.sql.session.timeZone 
+#>                      "UTC"
 spark_interrupt(con)
 spark_disconnect(con)
 ```
 
 ## Next
 
-The [reference
-index](https://pedrobtz.github.io/zuspark/reference/index.md) lists
-every function. An article on running Spark without the JVM, including
-handing results to DuckDB, is planned.
+- [Spark without the
+  JVM](https://pedrobtz.github.io/zuspark/articles/spark-without-the-jvm.md):
+  what zuspark is made of, and a Spark result handed to DuckDB.
+- [Connect to
+  Databricks](https://pedrobtz.github.io/zuspark/articles/databricks.md).
+- The [reference
+  index](https://pedrobtz.github.io/zuspark/reference/index.md) lists
+  every function.

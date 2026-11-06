@@ -35,12 +35,12 @@ and `contexts` (a data frame of the query fragments).
 ## Examples
 
 ``` r
-if (FALSE) { # nzchar(Sys.getenv("SPARK_REMOTE"))
 con <- spark_connect()
 err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
 err$error_class
+#> [1] "TABLE_OR_VIEW_NOT_FOUND"
 details <- spark_error_details(err)
 details[[1]]$message
+#> [1] "[TABLE_OR_VIEW_NOT_FOUND] The table or view `no_such_table` cannot be found. Verify the spelling and correctness of the schema and catalog.\nSearch path: [`system`.`builtin`, `system`.`session`, `spark_catalog`.`default`].\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01; line 1 pos 14;\n'Project [*]\n+- 'UnresolvedRelation [no_such_table], [], false\n"
 spark_disconnect(con)
-}
 ```

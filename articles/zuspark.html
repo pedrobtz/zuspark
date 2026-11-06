@@ -34,7 +34,8 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/databricks.html">Connect to Databricks</a></li>
+<li><a class="dropdown-item" href="../articles/spark-without-the-jvm.html">Spark without the JVM</a></li>
+    <li><a class="dropdown-item" href="../articles/databricks.html">Connect to Databricks</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -77,15 +78,22 @@ bring the result back as Arrow or as a data frame.</p>
 </h2>
 <p><code><a href="../reference/spark_connect.html">spark_connect()</a></code> takes an <code>sc://</code> connection
 string, by default the one in the <code>SPARK_REMOTE</code> environment
-variable. A local Spark Connect server listens on port 15002.</p>
+variable. A local Spark Connect server listens on port 15002; this
+article runs against one.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_connect.html">spark_connect</a></span><span class="op">(</span><span class="st">"sc://localhost:15002"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/spark_version.html">spark_version</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_connect.html">spark_connect</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">con</span></span>
+<span><span class="co">#&gt; &lt;zuspark_connection&gt; sc://127.0.0.1:15002 (Spark 4.2.1)</span></span>
+<span><span class="co">#&gt;   session: 35a1945e-b255-4868-91e0-40334c528978</span></span>
+<span><span class="fu"><a href="../reference/spark_version.html">spark_version</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "4.2.1"</span></span></code></pre></div>
 <p>Parameters go after a <code>;</code>. <code>token</code> sends a
 bearer token and turns TLS on; any parameter zuspark doesn’t recognise
 is sent as a request header.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_connect.html">spark_connect</a></span><span class="op">(</span><span class="st">"sc://spark.example.com:443/;token=my-token"</span><span class="op">)</span></span></code></pre></div>
+<p>For Databricks, <code><a href="../reference/spark_connect_databricks.html">spark_connect_databricks()</a></code> builds the
+string and the header the workspace needs; see the <a href="databricks.html">Databricks article</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="run-sql">Run SQL<a class="anchor" aria-label="anchor" href="#run-sql"></a>
@@ -94,49 +102,128 @@ is sent as a request header.</p>
 <code>zuspark_query</code>, which holds the plan but no rows yet;
 nothing is read until you ask for it.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT id, id * 2 AS twice FROM range(10)"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/spark_schema.html">spark_schema</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)"</span><span class="op">)</span></span>
+<span><span class="va">q</span></span>
+<span><span class="co">#&gt; &lt;zuspark_query&gt; SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)</span></span>
+<span><span class="co">#&gt;   on sc://127.0.0.1:15002 (not run yet)</span></span></code></pre></div>
+<p><code><a href="../reference/spark_schema.html">spark_schema()</a></code> asks the server for the query’s types
+without running it. They are Spark’s types, as Spark names them.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/spark_schema.html">spark_schema</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    name   type nullable</span></span>
+<span><span class="co">#&gt; 1    id bigint    FALSE</span></span>
+<span><span class="co">#&gt; 2 twice bigint    FALSE</span></span>
+<span><span class="co">#&gt; 3     s string    FALSE</span></span></code></pre></div>
 <p>Commands such as DDL, DML and <code>SET</code> run at once, and
 <code><a href="../reference/spark_sql.html">spark_sql()</a></code> returns the rows they produce as a data
 frame.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"CREATE TEMPORARY VIEW small AS SELECT * FROM range(5)"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"CREATE OR REPLACE TEMPORARY VIEW small AS SELECT * FROM range(3)"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; data frame with 0 columns and 0 rows</span></span>
+<span><span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SHOW VIEWS"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   namespace viewName isTemporary</span></span>
+<span><span class="co">#&gt; 1              small        TRUE</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="collect-the-result">Collect the result<a class="anchor" aria-label="anchor" href="#collect-the-result"></a>
 </h2>
 <p><code><a href="../reference/spark_collect.html">spark_collect()</a></code> runs the query and returns one data
-frame. Types that R can’t hold exactly, such as a <code>BIGINT</code>
-beyond 2^53, are an error by default; <code>lossy</code> chooses text or
-a widened type instead.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Open: whether spark_collect() returns a plain data frame or a zutable</span></span>
-<span><span class="co"># (the design proposes plain, unless a consumer asks).</span></span>
-<span><span class="fu"><a href="../reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">q</span>, lossy <span class="op">=</span> <span class="st">"character"</span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="../reference/spark_collect.html">spark_fetch()</a></code> returns the result as an Arrow stream
-instead, for code that consumes Arrow directly.</p>
+frame. It runs it again every time, so the result is always current.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">stream</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_collect.html">spark_fetch</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   id twice s</span></span>
+<span><span class="co">#&gt; 1  0     0 0</span></span>
+<span><span class="co">#&gt; 2  1     2 1</span></span>
+<span><span class="co">#&gt; 3  2     4 2</span></span>
+<span><span class="co">#&gt; 4  3     6 3</span></span>
+<span><span class="co">#&gt; 5  4     8 4</span></span></code></pre></div>
+<p>Values that R can’t hold exactly, such as a <code>BIGINT</code>
+beyond 2^53, are an error by default. <code>lossy</code> chooses their
+exact text or a widened type instead.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">big</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT 9007199254740993 AS id"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">conditionMessage</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="../reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">big</span><span class="op">)</span>, error <span class="op">=</span> <span class="va">identity</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "Column `id` (Arrow format `l`) can't be converted to R exactly: row 1 holds 9007199254740993. Load zuint to read it exactly, or use `lossy = \"character\"` for its exact text, or `lossy = \"allow\"` to accept the loss."</span></span>
+<span><span class="fu"><a href="../reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">big</span>, lossy <span class="op">=</span> <span class="st">"character"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                 id</span></span>
+<span><span class="co">#&gt; 1 9007199254740993</span></span>
+<span><span class="fu"><a href="../reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">big</span>, lossy <span class="op">=</span> <span class="st">"allow"</span><span class="op">)</span></span>
+<span><span class="co">#&gt;             id</span></span>
+<span><span class="co">#&gt; 1 9.007199e+15</span></span></code></pre></div>
+<p><code><a href="../reference/spark_collect.html">spark_fetch()</a></code> returns the result as an Arrow stream
+instead, for code that consumes Arrow directly, and
+<code><a href="../reference/spark_sql.html">spark_execute()</a></code> runs a statement only for its effect,
+returning the number of rows it produced.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">stream</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_collect.html">spark_fetch</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span>
+<span><span class="fu">zuarrow</span><span class="fu">::</span><span class="fu"><a href="https://pedrobtz.github.io/zuarrow/reference/arrow_schema.html" class="external-link">arrow_schema</a></span><span class="op">(</span><span class="va">stream</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;zuarrow_schema&gt; struct&lt;id: int64, twice: int64, s: string&gt;</span></span>
+<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_sql.html">spark_execute</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT * FROM range(1000000)"</span><span class="op">)</span></span>
+<span><span class="va">n</span></span>
+<span><span class="co">#&gt; [1] 1e+06</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="errors">Errors<a class="anchor" aria-label="anchor" href="#errors"></a>
+</h2>
+<p>Spark’s errors arrive as a <code>zuspark_sql_error</code>, with
+Spark’s error class and SQLSTATE. <code><a href="../reference/spark_error_details.html">spark_error_details()</a></code>
+asks the server for the rest.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">err</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT * FROM no_such_table"</span><span class="op">)</span>, error <span class="op">=</span> <span class="va">identity</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">err</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "zuspark_sql_error"     "zuspark_error"         "zugrpc_error_internal"</span></span>
+<span><span class="co">#&gt; [4] "zugrpc_error_status"   "zugrpc_error"          "error"                </span></span>
+<span><span class="co">#&gt; [7] "condition"</span></span>
+<span><span class="va">err</span><span class="op">$</span><span class="va">error_class</span></span>
+<span><span class="co">#&gt; [1] "TABLE_OR_VIEW_NOT_FOUND"</span></span>
+<span><span class="va">err</span><span class="op">$</span><span class="va">sql_state</span></span>
+<span><span class="co">#&gt; [1] "42P01"</span></span>
+<span><span class="va">details</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_error_details.html">spark_error_details</a></span><span class="op">(</span><span class="va">err</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">details</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "type"               "message"            "error_class"       </span></span>
+<span><span class="co">#&gt; [4] "sql_state"          "message_parameters" "cause"             </span></span>
+<span><span class="co">#&gt; [7] "stack"              "contexts"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">details</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">stack</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;                                                            class</span></span>
+<span><span class="co">#&gt; 1            org.apache.spark.sql.errors.QueryCompilationErrors$</span></span>
+<span><span class="co">#&gt; 2 org.apache.spark.sql.catalyst.analysis.package$AnalysisErrorAt</span></span>
+<span><span class="co">#&gt; 3           org.apache.spark.sql.catalyst.analysis.CheckAnalysis</span></span>
+<span><span class="co">#&gt;                              method                         file line</span></span>
+<span><span class="co">#&gt; 1 tableOrViewNotFoundWithSearchPath QueryCompilationErrors.scala  977</span></span>
+<span><span class="co">#&gt; 2                     tableNotFound                package.scala   94</span></span>
+<span><span class="co">#&gt; 3         $anonfun$checkAnalysis0$2          CheckAnalysis.scala  412</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="settings-interrupts-and-disconnecting">Settings, interrupts and disconnecting<a class="anchor" aria-label="anchor" href="#settings-interrupts-and-disconnecting"></a>
 </h2>
 <p><code><a href="../reference/spark_config.html">spark_config()</a></code> reads the session’s settings, or sets
-them by name. <code><a href="../reference/spark_interrupt.html">spark_interrupt()</a></code> stops a running query on
-the server, or every operation when given no query.
+them by name and returns the values they had. An R interrupt (Ctrl-C,
+Esc) while a query runs stops it on the server;
+<code><a href="../reference/spark_interrupt.html">spark_interrupt()</a></code> stops every operation of the session.
 <code><a href="../reference/spark_connect.html">spark_disconnect()</a></code> releases the session.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/spark_config.html">spark_config</a></span><span class="op">(</span><span class="va">con</span>, spark.sql.session.timeZone <span class="op">=</span> <span class="st">"UTC"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">old</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_config.html">spark_config</a></span><span class="op">(</span><span class="va">con</span>, spark.sql.session.timeZone <span class="op">=</span> <span class="st">"UTC"</span><span class="op">)</span></span>
+<span><span class="va">old</span></span>
+<span><span class="co">#&gt; spark.sql.session.timeZone </span></span>
+<span><span class="co">#&gt;                  "Etc/UTC"</span></span>
+<span><span class="fu"><a href="../reference/spark_config.html">spark_config</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"spark.sql.session.timeZone"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; spark.sql.session.timeZone </span></span>
+<span><span class="co">#&gt;                      "UTC"</span></span>
 <span><span class="fu"><a href="../reference/spark_interrupt.html">spark_interrupt</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/spark_connect.html">spark_disconnect</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="next">Next<a class="anchor" aria-label="anchor" href="#next"></a>
 </h2>
-<p>The <a href="../reference/index.html">reference index</a> lists every
-function. An article on running Spark without the JVM, including handing
-results to DuckDB, is planned.</p>
+<ul>
+<li>
+<a href="spark-without-the-jvm.html">Spark without the JVM</a>: what
+zuspark is made of, and a Spark result handed to DuckDB.</li>
+<li>
+<a href="databricks.html">Connect to Databricks</a>.</li>
+<li>The <a href="../reference/index.html">reference index</a> lists
+every function.</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

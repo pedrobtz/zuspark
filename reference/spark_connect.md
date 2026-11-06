@@ -73,9 +73,9 @@ released.
 ## Examples
 
 ``` r
-if (FALSE) { # nzchar(Sys.getenv("SPARK_REMOTE"))
 con <- spark_connect()
 con
+#> <zuspark_connection> sc://127.0.0.1:15002 (Spark 4.2.1)
+#>   session: 63816acc-d56b-4941-b674-b437b13b38d6
 spark_disconnect(con)
-}
 ```

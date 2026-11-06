@@ -35,11 +35,11 @@ passing them back restores the session:
 ## Examples
 
 ``` r
-if (FALSE) { # nzchar(Sys.getenv("SPARK_REMOTE"))
 con <- spark_connect()
 spark_config(con, "spark.sql.session.timeZone")
+#> spark.sql.session.timeZone 
+#>                  "Etc/UTC" 
 old <- spark_config(con, spark.sql.session.timeZone = "UTC")
 do.call(spark_config, c(list(con), as.list(old)))
 spark_disconnect(con)
-}
 ```

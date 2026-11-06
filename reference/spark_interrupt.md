@@ -29,9 +29,7 @@ The ids of the operations the server interrupted, invisibly.
 ## Examples
 
 ``` r
-if (FALSE) { # nzchar(Sys.getenv("SPARK_REMOTE"))
 con <- spark_connect()
 spark_interrupt(con)
 spark_disconnect(con)
-}
 ```

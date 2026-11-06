@@ -58,12 +58,18 @@ error by default; `lossy` chooses text or a widened type instead.
 ## Examples
 
 ``` r
-if (FALSE) { # nzchar(Sys.getenv("SPARK_REMOTE"))
 con <- spark_connect()
 q <- spark_sql(con, "SELECT id FROM range(3)")
 spark_collect(q)
+#>   id
+#> 1  0
+#> 2  1
+#> 3  2
 stream <- spark_fetch(q)
 zuarrow::arrow_to_r(stream)
+#>   id
+#> 1  0
+#> 2  1
+#> 3  2
 spark_disconnect(con)
-}
 ```

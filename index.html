@@ -36,7 +36,8 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/databricks.html">Connect to Databricks</a></li>
+<li><a class="dropdown-item" href="articles/spark-without-the-jvm.html">Spark without the JVM</a></li>
+    <li><a class="dropdown-item" href="articles/databricks.html">Connect to Databricks</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -57,22 +58,93 @@
 </h1></div>
 <!-- badges: start -->
 
-<p>The goal of zuspark is to …</p>
+<p><a href="https://spark.apache.org/docs/latest/spark-connect-overview.html" class="external-link">Spark Connect</a> lets a client run Spark SQL on a remote cluster over gRPC. Until now, reaching it from R meant a local Spark installation and its JVM, or a Python environment in between.</p>
+<p>zuspark is a Spark Connect client written in R. It connects to an <code>sc://</code> endpoint, runs SQL there and brings the result back as Arrow or as a data frame, with no JVM, no Python and no Spark installation on your machine.</p>
+<ul>
+<li>
+<strong>Only R packages.</strong> gRPC, protocol buffers and Arrow come from <a href="https://github.com/pedrobtz/zugrpc" class="external-link">zugrpc</a>, <a href="https://github.com/pedrobtz/zuproto" class="external-link">zuproto</a> and <a href="https://github.com/pedrobtz/zuarrow" class="external-link">zuarrow</a>; zuspark itself has no compiled code.</li>
+<li>
+<strong>Spark’s own protocol.</strong> The message definitions ship with the package, pinned to Spark 4.2.1, and the connection string is PySpark’s.</li>
+<li>
+<strong>Exact by default.</strong> A value R cannot hold exactly is an error, not a silent rounding; you choose its text or a widened type instead.</li>
+<li>
+<strong>Results that survive a cut.</strong> Long results are read with reattachable execution: a stream cut by a proxy or a timeout resumes where it stopped, and the server’s buffer is released as the rows are read.</li>
+<li>
+<strong>Databricks too.</strong> <code><a href="reference/spark_connect_databricks.html">spark_connect_databricks()</a></code> connects to a workspace’s serverless compute or to a cluster.</li>
+</ul>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>You can install the development version of zuspark from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
+<p>zuspark is not on CRAN yet. Install the development version from GitHub; pak also installs its dependencies, which are on GitHub too:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
 <span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"pedrobtz/zuspark"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+<h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>This is a basic example which shows you how to solve a common problem:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pedrobtz.github.io/zuspark/">zuspark</a></span><span class="op">)</span></span>
-<span><span class="co">## basic example code</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pedrobtz.github.io/zuspark/">zuspark</a></span><span class="op">)</span></span></code></pre></div>
+<p>Connect to a Spark Connect server. A local one listens on port 15002; <code><a href="reference/spark_connect.html">spark_connect()</a></code> with no argument reads the <code>SPARK_REMOTE</code> environment variable.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/spark_connect.html">spark_connect</a></span><span class="op">(</span><span class="st">"sc://localhost:15002"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/spark_version.html">spark_version</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "4.2.1"</span></span></code></pre></div>
+<p><code><a href="reference/spark_sql.html">spark_sql()</a></code> sends a query and returns it unexecuted; <code><a href="reference/spark_collect.html">spark_collect()</a></code> runs it and returns a data frame.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT id, id % 3 AS bucket, CAST(id AS STRING) AS label FROM range(6)"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   id bucket label</span></span>
+<span><span class="co">#&gt; 1  0      0     0</span></span>
+<span><span class="co">#&gt; 2  1      1     1</span></span>
+<span><span class="co">#&gt; 3  2      2     2</span></span>
+<span><span class="co">#&gt; 4  3      0     3</span></span>
+<span><span class="co">#&gt; 5  4      1     4</span></span>
+<span><span class="co">#&gt; 6  5      2     5</span></span></code></pre></div>
+<p>The work happens on the server: here Spark aggregates ten million rows, and only seven come back.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="fu"><a href="reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"</span></span>
+<span><span class="st">  SELECT id % 7 AS weekday, count(*) AS n</span></span>
+<span><span class="st">  FROM range(10000000)</span></span>
+<span><span class="st">  GROUP BY weekday</span></span>
+<span><span class="st">  ORDER BY weekday</span></span>
+<span><span class="st">"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   weekday       n</span></span>
+<span><span class="co">#&gt; 1       0 1428572</span></span>
+<span><span class="co">#&gt; 2       1 1428572</span></span>
+<span><span class="co">#&gt; 3       2 1428572</span></span>
+<span><span class="co">#&gt; 4       3 1428571</span></span>
+<span><span class="co">#&gt; 5       4 1428571</span></span>
+<span><span class="co">#&gt; 6       5 1428571</span></span>
+<span><span class="co">#&gt; 7       6 1428571</span></span></code></pre></div>
+<p>Spark’s errors keep Spark’s error class and SQLSTATE.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">err</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="fu"><a href="reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT * FROM sales"</span><span class="op">)</span>, error <span class="op">=</span> <span class="va">identity</span><span class="op">)</span></span>
+<span><span class="va">err</span><span class="op">$</span><span class="va">error_class</span></span>
+<span><span class="co">#&gt; [1] "TABLE_OR_VIEW_NOT_FOUND"</span></span>
+<span><span class="va">err</span><span class="op">$</span><span class="va">sql_state</span></span>
+<span><span class="co">#&gt; [1] "42P01"</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/spark_connect.html">spark_disconnect</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></code></pre></div>
+<p>Every function but <code><a href="reference/zuspark_info.html">zuspark_info()</a></code> starts with <code>spark_</code>, and every one after <code><a href="reference/spark_connect.html">spark_connect()</a></code> takes the connection, a query or an error first.</p>
+</div>
+<div class="section level2">
+<h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
+</h2>
+<ul>
+<li>
+<a href="https://pedrobtz.github.io/zuspark/articles/zuspark.html">Get started</a>: connecting, running SQL, types, errors and settings.</li>
+<li>
+<a href="https://pedrobtz.github.io/zuspark/articles/spark-without-the-jvm.html">Spark without the JVM</a>: what zuspark is made of, and a Spark result handed to DuckDB.</li>
+<li>
+<a href="https://pedrobtz.github.io/zuspark/articles/databricks.html">Connect to Databricks</a>, including Databricks Free Edition.</li>
+<li>The <a href="https://pedrobtz.github.io/zuspark/reference/">reference index</a>.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="related-work">Related work<a class="anchor" aria-label="anchor" href="#related-work"></a>
+</h2>
+<p>zuspark speaks the protocol defined by Apache Spark’s <a href="https://github.com/apache/spark/tree/master/sql/connect/common/src/main/protobuf" class="external-link">Spark Connect</a> <code>.proto</code> files, and checks its results against PySpark’s. In R, <a href="https://spark.posit.co/" class="external-link">sparklyr</a> reaches Spark Connect through <a href="https://github.com/mlverse/pysparklyr" class="external-link">pysparklyr</a> and Python, and <a href="https://spark.apache.org/docs/latest/sparkr.html" class="external-link">SparkR</a> through a local Spark; <a href="https://github.com/apache/spark-connect-go" class="external-link">spark-connect-go</a> and <a href="https://github.com/apache/spark-connect-rust" class="external-link">spark-connect-rust</a> are native clients in other languages.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">
@@ -102,6 +174,7 @@
 <div class="dev-status">
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
+<li><a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a></li>
 <li><a href="https://github.com/pedrobtz/zuspark/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/pedrobtz/zuspark/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
 <li><a href="https://github.com/pedrobtz/zuspark/actions/workflows/coverage.yaml" class="external-link"><img src="https://raw.githubusercontent.com/pedrobtz/zuspark/gh-pages/badges/coverage.svg" alt="coverage"></a></li>
 </ul>

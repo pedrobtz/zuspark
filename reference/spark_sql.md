@@ -38,12 +38,20 @@ produced, invisibly.
 ## Examples
 
 ``` r
-if (FALSE) { # nzchar(Sys.getenv("SPARK_REMOTE"))
 con <- spark_connect()
 q <- spark_sql(con, "SELECT id, id * 2 AS twice FROM range(5)")
 q
+#> <zuspark_query> SELECT id, id * 2 AS twice FROM range(5)
+#>   on sc://127.0.0.1:15002 (not run yet)
 spark_collect(q)
+#>   id twice
+#> 1  0     0
+#> 2  1     2
+#> 3  2     4
+#> 4  3     6
+#> 5  4     8
 spark_sql(con, "SHOW DATABASES")
+#>   namespace
+#> 1   default
 spark_disconnect(con)
-}
 ```

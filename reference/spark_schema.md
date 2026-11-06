@@ -28,9 +28,10 @@ A data frame with one row per column: `name`, `type` and `nullable`.
 ## Examples
 
 ``` r
-if (FALSE) { # nzchar(Sys.getenv("SPARK_REMOTE"))
 con <- spark_connect()
 spark_schema(spark_sql(con, "SELECT id, CAST(id AS DECIMAL(10, 2)) AS d FROM range(3)"))
+#>   name          type nullable
+#> 1   id        bigint    FALSE
+#> 2    d decimal(10,2)     TRUE
 spark_disconnect(con)
-}
 ```

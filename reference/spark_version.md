@@ -28,10 +28,11 @@ spark_session_id(con)
 ## Examples
 
 ``` r
-if (FALSE) { # nzchar(Sys.getenv("SPARK_REMOTE"))
 con <- spark_connect()
 spark_version(con)
+#> [1] "4.2.1"
 spark_session_id(con)
+#>                                 client                                 server 
+#> "d83c5285-90f5-40df-a68f-cc5dff454a31" "4072f696-f882-40aa-a397-151cfeca5e20" 
 spark_disconnect(con)
-}
 ```
