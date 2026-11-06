@@ -48,6 +48,10 @@
   limits or that does not decompress is a `zuspark_protocol_error`; before,
   only malformed data was.
 
+* A malformed connection string's error never prints a token: the
+  missing-host message redacts it, and a malformed parameter is named by
+  its key only (#25).
+
 * An R interrupt while a query runs cancels it and stops the job on the
   server (`zuspark_interrupt_error`); `spark_interrupt()` stops every
   operation of the session, or one.

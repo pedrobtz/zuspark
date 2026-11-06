@@ -84,7 +84,9 @@ parse_url_params <- function(text) {
             "by an equal sign (=). Please update the parameter to follow the",
             "correct format, e.g., 'key=value'."
           ),
-          p
+          # Only the key: a value, such as a token with '=' padding, may
+          # be a credential.
+          sub("=.*$", "", p)
         )
       )
     }
@@ -131,7 +133,7 @@ parse_authority <- function(authority, url) {
   if (!nzchar(host)) {
     url_abort(
       "host",
-      sprintf("Hostname is missing in the URL: '%s'. %s", url, spark_url_example)
+      sprintf("Hostname is missing in the URL: '%s'. %s", redact_url(url), spark_url_example)
     )
   }
   host <- tolower(host)
