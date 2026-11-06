@@ -109,7 +109,21 @@ test_that("a missing host is reported against the string as given", {
 })
 
 test_that("a parameter with two equal signs is not a key-value pair", {
-  expect_error(parse_spark_url("sc://h/;a=b=c"), "'a=b=c'", class = "zuspark_url_error")
+  # Only the key is quoted: the value may be a credential.
+  expect_error(parse_spark_url("sc://h/;a=b=c"), "Parameter 'a' ", class = "zuspark_url_error")
+})
+
+test_that("parse errors never print the token", {
+  # A base64 token with padding has '=' in it.
+  err <- tryCatch(parse_spark_url("sc://host/;token=c2VjcmV0=="), error = identity)
+  expect_s3_class(err, "zuspark_url_error")
+  expect_false(grepl("c2VjcmV0", conditionMessage(err), fixed = TRUE))
+  expect_match(conditionMessage(err), "Parameter 'token' ", fixed = TRUE)
+
+  err <- tryCatch(parse_spark_url("sc://:15002/;token=SECRET123"), error = identity)
+  expect_s3_class(err, "zuspark_url_error")
+  expect_false(grepl("SECRET123", conditionMessage(err), fixed = TRUE))
+  expect_match(conditionMessage(err), "'sc://:15002/;token=<redacted>'", fixed = TRUE)
 })
 
 test_that("a numeric parameter must be a number", {
@@ -117,4 +131,19 @@ test_that("a numeric parameter must be a number", {
     parse_spark_url("sc://h/;grpc_max_message_size=big"),
     class = "zuspark_url_error"
   )
+})
+
+test_that("an invalid percent-escape is refused, not silently changed", {
+  for (bad in c("sc://h/;token=%zz", "sc://h/;x-key=a%2", "sc://h/;x-key=%00")) {
+    err <- tryCatch(parse_spark_url(bad), error = identity)
+    expect_s3_class(err, "zuspark_url_error")
+    expect_identical(err$part, "parameter")
+  }
+  expect_identical(parse_spark_url("sc://h/;x-key=a%20b")$headers[["x-key"]], "a b")
+})
+
+test_that("an empty token is refused", {
+  err <- tryCatch(parse_spark_url("sc://h/;token="), error = identity)
+  expect_s3_class(err, "zuspark_url_error")
+  expect_identical(err$part, "token")
 })

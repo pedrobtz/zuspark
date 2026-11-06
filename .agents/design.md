@@ -439,8 +439,15 @@ to it, and `headers` for names that are not valid in a URL. A malformed
 string is a `zuspark_url_error` naming the part, with PySpark's four
 messages as the test cases. *2026-11-05:* PySpark's missing-host
 message quotes its internal `http://` rewrite of the string; zuspark's
-quotes the string as given. A malformed port, which Python reports as a
-`ValueError`, is a fifth `zuspark_url_error` (part `port`).
+quotes the string as given. *2026-11-06 (#25, the maintainer's
+decision):* no message quotes a credential: the missing-host message
+quotes the string with `token` redacted, and the key-value message
+quotes only the parameter's key. A malformed port, which Python reports as a
+`ValueError`, is a fifth `zuspark_url_error` (part `port`). *2026-11-06
+(#31):* a value with an invalid percent-escape, or `%00`, is a
+`zuspark_url_error` (part `parameter`) rather than the changed value
+`utils::URLdecode()` returns, and an empty `token=` is one too (part
+`token`), since either would still send an `authorization` header.
 
 ### 7.2 Sessions
 
@@ -539,7 +546,10 @@ minutes) or `senderMaxStreamSize` (1 GiB). The client's loop, after
 PySpark releases from a thread pool. `zuspark` has no threads: it
 releases every `k` responses inline on the same channel (`k` chosen at
 Stage 2, 16 to start), and always on completion. Nothing else is
-retried in v0.1.0 (D8).
+retried in v0.1.0 (D8). *2026-11-06 (#27):* the release after
+`ResultComplete` is best-effort, as the release on abandonment already
+was: a statement whose result is complete has run, and a failed release
+reported as its error would invite running it twice.
 
 *Decided 2026-11-05 (Stage 2):* `k` is 16. A cut stream reattaches;
 three reattaches in a row that bring no new response are a
