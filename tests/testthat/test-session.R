@@ -254,3 +254,54 @@ test_that("NA and non-finite values are refused as settings and parameters", {
     expect_error(append_url_params("sc://h", list(x = v)), class = "zuspark_url_error")
   }
 })
+
+test_that("a saved connection, query or error does not hold the token", {
+  secret <- "zuspark-test-secret-7f3a"
+  url <- sprintf("sc://fixture.invalid/;token=%s", secret)
+  # Serialised without the transport binding: in use it is zuspark's own
+  # function, which holds no data, but here it is the fake channel, whose
+  # closure reaches this test's `secret`.
+  holds_token <- function(x, con) {
+    fake <- con$transport
+    con$transport <- NULL
+    on.exit(con$transport <- fake)
+    length(grepRaw(secret, serialize(x, NULL), fixed = TRUE)) > 0L
+  }
+  # Which fields hold it, to say where on failure.
+  where_token <- function(x, con) {
+    fake <- con$transport
+    con$transport <- NULL
+    on.exit(con$transport <- fake)
+    envs <- if (is.environment(x)) x else as.environment(unclass(x))
+    hits <- Filter(function(n) {
+      length(grepRaw(secret, serialize(get(n, envs), NULL), fixed = TRUE)) > 0L
+    }, ls(envs, all.names = TRUE))
+    paste(hits, collapse = ", ")
+  }
+
+  local_replay("sql-query")
+  con <- replay_connect("sql-query", url = url)
+  q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
+  expect_false(holds_token(con, con), info = where_token(con, con))
+  expect_false(holds_token(q, con), info = where_token(q, con))
+  close_connection(con)
+
+  local_replay("error-details", responses = list(`3` = function(messages) {
+    list(spark_status_condition(error_id = decode_fixture("error-details", 5, "request")$error_id))
+  }))
+  con <- replay_connect("error-details", url = url)
+  err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
+  expect_s3_class(err, "zuspark_sql_error")
+  expect_false(holds_token(err, con), info = where_token(err, con))
+  close_connection(con)
+})
+
+test_that("a connection unserialised in another session cannot reach the channel", {
+  local_replay("connect")
+  con <- replay_connect("connect")
+  copy <- unserialize(serialize(con, NULL))
+  # Another R session has no channel under the copy's key.
+  rm(list = copy$channel_key, envir = zuspark:::channels)
+  expect_error(connection_channel(copy), class = "zuspark_session_error")
+  close_connection(con)
+})

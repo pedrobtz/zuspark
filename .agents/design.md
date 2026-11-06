@@ -483,6 +483,14 @@ finalizer does the same best-effort, and the server drops an idle
 session after `spark.connect.session.manager.defaultSessionTimeout`,
 sixty minutes by default.
 
+*2026-11-06 (#26):* the gRPC channel, whose headers hold the bearer
+token, lives in a registry in zuspark's namespace, keyed by a fresh id
+per connection; the connection holds only the key. Queries and Spark
+errors keep the connection, and are saved or sent between processes by
+callr, future, mirai or targets; with the channel on the connection the
+token went with them. A connection unserialised in another R session has
+no channel there, and every call on it is a `zuspark_session_error`.
+
 ### 7.3 Executing SQL: the two-step protocol
 
 In Spark 3.4 a query was a `Relation{sql}` sent as `Plan.root`. Since
