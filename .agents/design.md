@@ -439,7 +439,10 @@ to it, and `headers` for names that are not valid in a URL. A malformed
 string is a `zuspark_url_error` naming the part, with PySpark's four
 messages as the test cases. *2026-11-05:* PySpark's missing-host
 message quotes its internal `http://` rewrite of the string; zuspark's
-quotes the string as given. A malformed port, which Python reports as a
+quotes the string as given. *2026-11-06 (#25, the maintainer's
+decision):* no message quotes a credential: the missing-host message
+quotes the string with `token` redacted, and the key-value message
+quotes only the parameter's key. A malformed port, which Python reports as a
 `ValueError`, is a fifth `zuspark_url_error` (part `port`).
 
 ### 7.2 Sessions
