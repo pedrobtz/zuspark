@@ -211,12 +211,23 @@ test_that("a saved connection, query or error does not hold the token", {
     on.exit(con$transport <- fake)
     length(grepRaw(secret, serialize(x, NULL), fixed = TRUE)) > 0L
   }
+  # Which fields hold it, to say where on failure.
+  where_token <- function(x, con) {
+    fake <- con$transport
+    con$transport <- grpc_transport
+    on.exit(con$transport <- fake)
+    envs <- if (is.environment(x)) x else as.environment(unclass(x))
+    hits <- Filter(function(n) {
+      length(grepRaw(secret, serialize(get(n, envs), NULL), fixed = TRUE)) > 0L
+    }, ls(envs, all.names = TRUE))
+    paste(hits, collapse = ", ")
+  }
 
   local_replay("sql-query")
   con <- replay_connect("sql-query", url = url)
   q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
-  expect_false(holds_token(con, con))
-  expect_false(holds_token(q, con))
+  expect_false(holds_token(con, con), info = where_token(con, con))
+  expect_false(holds_token(q, con), info = where_token(q, con))
   close_connection(con)
 
   local_replay("error-details", responses = list(`3` = function(messages) {
@@ -225,7 +236,7 @@ test_that("a saved connection, query or error does not hold the token", {
   con <- replay_connect("error-details", url = url)
   err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
   expect_s3_class(err, "zuspark_sql_error")
-  expect_false(holds_token(err, con))
+  expect_false(holds_token(err, con), info = where_token(err, con))
   close_connection(con)
 })
 
