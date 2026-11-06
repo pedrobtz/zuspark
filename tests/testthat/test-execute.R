@@ -43,6 +43,41 @@ test_that("consumed responses are released along the way and at the end", {
   expect_false(is.null(releases[[length(releases)]]$release_all))
 })
 
+test_that("each inline release names the last response consumed before it", {
+  calls <- local_replay("reattach")
+  con <- replay_connect("reattach")
+  spark_config(con, spark.sql.execution.arrow.maxRecordsPerBatch = 100)
+  spark_collect(spark_sql(con, reattach_sql))
+  spark_disconnect(con)
+
+  # The rule, replayed over the recorded responses: per operation, a
+  # release after every `release_every` responses, naming the last one
+  # consumed, until the result is complete.
+  expected <- character()
+  unreleased <- 0L
+  complete <- FALSE
+  for (n in seq_along(calls$methods)) {
+    method <- calls$methods[[n]]
+    if (method == "ExecutePlan") {
+      unreleased <- 0L
+      complete <- FALSE
+    }
+    if (!method %in% c("ExecutePlan", "ReattachExecute")) next
+    for (r in decode_stream_fixture("reattach", n)) {
+      if (!is.null(r$result_complete)) complete <- TRUE
+      unreleased <- unreleased + 1L
+      if (!complete && unreleased >= release_every) {
+        expected <- c(expected, r$response_id)
+        unreleased <- 0L
+      }
+    }
+  }
+  releases <- calls$requests[calls$methods == "ReleaseExecute"]
+  sent <- unlist(lapply(releases, function(r) r$release_until$response_id))
+  expect_gte(length(expected), 1L)
+  expect_identical(sent, expected)
+})
+
 test_that("a stream that fails before any response is re-sent only when the operation never arrived", {
   local_replay("sql-query")
   con <- replay_connect("sql-query")
