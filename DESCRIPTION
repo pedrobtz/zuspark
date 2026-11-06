@@ -42,6 +42,6 @@ Remotes:
     pedrobtz/zuproto,
     pedrobtz/zutempo
 Config/testthat/edition: 3
-Config/Needs/website: knitr, rmarkdown
+Config/Needs/website: arrow, DBI, duckdb, nanoarrow, knitr, rmarkdown
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.1.0
