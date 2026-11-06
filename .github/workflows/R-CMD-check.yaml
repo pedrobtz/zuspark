@@ -29,6 +29,11 @@ jobs:
       # schedule, on a manual dispatch, and on a pull request labelled
       # `full-ci`.
       profile: auto
+      # CRAN's NOSUGGESTS and NOLD flavours, in the full profile: zuspark
+      # has Suggests (testthat, withr and the exact-type packages) whose
+      # absence must not break a check.
+      nosuggests: true
+      nold: true
       # The shared default has no R-devel runner; this row covers CRAN's own
       # Windows R-devel check. It runs in the full profile only.
       runners: |
