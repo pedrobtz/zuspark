@@ -90,9 +90,23 @@ parse_url_params <- function(text) {
         )
       )
     }
-    params[[kv[[1L]]]] <- utils::URLdecode(kv[[2L]])
+    params[[kv[[1L]]]] <- url_decode(kv[[1L]], kv[[2L]])
   }
   params
+}
+
+# Percent-decodes a parameter's value. utils::URLdecode() turns an invalid
+# escape into a warning and a changed value, and %00 into an empty one; a
+# token changed that way would still be sent, so both are refused.
+url_decode <- function(key, value) {
+  escapes <- regmatches(value, gregexpr("%.{0,2}", value))[[1L]]
+  if (any(!grepl("^%[0-9A-Fa-f]{2}$", escapes)) || any(tolower(escapes) == "%00")) {
+    url_abort(
+      "parameter",
+      sprintf("Parameter '%s' has an invalid percent-escape; write '%%' as '%%25'.", key)
+    )
+  }
+  utils::URLdecode(value)
 }
 
 parse_authority <- function(authority, url) {
@@ -147,6 +161,9 @@ spark_url_settings <- function(host, port, params) {
   if (is.null(token)) {
     env <- Sys.getenv("SPARK_CONNECT_AUTHENTICATE_TOKEN")
     if (nzchar(env)) token <- env
+  }
+  if (!is.null(token) && !nzchar(token)) {
+    url_abort("token", "Parameter 'token' is empty: give a token, or leave the parameter out.")
   }
   use_ssl <- identical(tolower(get("use_ssl") %||% ""), "true")
   # PySpark: a token makes the channel secure, but to localhost without

@@ -443,7 +443,11 @@ quotes the string as given. *2026-11-06 (#25, the maintainer's
 decision):* no message quotes a credential: the missing-host message
 quotes the string with `token` redacted, and the key-value message
 quotes only the parameter's key. A malformed port, which Python reports as a
-`ValueError`, is a fifth `zuspark_url_error` (part `port`).
+`ValueError`, is a fifth `zuspark_url_error` (part `port`). *2026-11-06
+(#31):* a value with an invalid percent-escape, or `%00`, is a
+`zuspark_url_error` (part `parameter`) rather than the changed value
+`utils::URLdecode()` returns, and an empty `token=` is one too (part
+`token`), since either would still send an `authorization` header.
 
 ### 7.2 Sessions
 

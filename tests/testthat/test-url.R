@@ -132,3 +132,18 @@ test_that("a numeric parameter must be a number", {
     class = "zuspark_url_error"
   )
 })
+
+test_that("an invalid percent-escape is refused, not silently changed", {
+  for (bad in c("sc://h/;token=%zz", "sc://h/;x-key=a%2", "sc://h/;x-key=%00")) {
+    err <- tryCatch(parse_spark_url(bad), error = identity)
+    expect_s3_class(err, "zuspark_url_error")
+    expect_identical(err$part, "parameter")
+  }
+  expect_identical(parse_spark_url("sc://h/;x-key=a%20b")$headers[["x-key"]], "a b")
+})
+
+test_that("an empty token is refused", {
+  err <- tryCatch(parse_spark_url("sc://h/;token="), error = identity)
+  expect_s3_class(err, "zuspark_url_error")
+  expect_identical(err$part, "token")
+})
