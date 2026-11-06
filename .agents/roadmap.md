@@ -30,7 +30,7 @@ benchmarks.
 | 6 | [Live suite, hostile responses and benchmarks](#stage-6--live-suite-hostile-responses-and-benchmarks) | full | [#8](https://github.com/pedrobtz/zuspark/issues/8) | [#21](https://github.com/pedrobtz/zuspark/pull/21) | 2026-11-06 |
 | 7 | [Documentation](#stage-7--documentation) | quick | [#9](https://github.com/pedrobtz/zuspark/issues/9) | [#22](https://github.com/pedrobtz/zuspark/pull/22) | 2026-11-06 |
 | 8 | [Full CI](#stage-8--full-ci) | full | [#10](https://github.com/pedrobtz/zuspark/issues/10) | [#23](https://github.com/pedrobtz/zuspark/pull/23) | 2026-11-06 |
-| 9 | [v0.1.0 readiness](#stage-9--v010-readiness) | full | [#11](https://github.com/pedrobtz/zuspark/issues/11) | | |
+| 9 | [v0.1.0 readiness](#stage-9--v010-readiness) | full | [#11](https://github.com/pedrobtz/zuspark/issues/11) | | 2026-11-06 |
 | 10 | [Review](#stage-10--review) | full | [#12](https://github.com/pedrobtz/zuspark/issues/12) | | |
 
 <!-- markdownlint-enable MD013 -->
@@ -368,6 +368,15 @@ dependencies only.
 - `DESCRIPTION` has no `Remotes:`, and its floors are versions on CRAN.
 - A full-profile run is green on the merge commit.
 
+**Deviation (2026-11-06, the maintainer's decision, design Q6).** 0.1.0
+is a GitHub release, not a CRAN submission: `DESCRIPTION` keeps
+`Remotes:`, and its floors are the siblings' tagged GitHub releases where
+they have one (`zuproto` and `zuid` 0.1.0); `zugrpc` and `zuarrow` have
+none yet. The first exit criterion therefore becomes "`Remotes:` names
+only siblings, and every floor is a tagged release". `cran-comments.md`
+is written for the CRAN version that follows. The `CRAN-submission`
+issue stays open, blocked as before.
+
 **Design.** [§4](design.md#4-dependencies-and-the-release-gate),
 [§12](design.md#12-acceptance-criteria-for-v010).
 
@@ -414,6 +423,5 @@ fixed. No new features. Only submission is left when it closes.
 
 ## Blocking open questions
 
-- [§15](design.md#15-open-questions) Q5 and Q6 block Stage 9: when the
-  siblings reach CRAN, and whether 0.1.0 is a CRAN submission at all.
-  zugrpc's roadmap records that zuhttp 0.1.0 carries HTTP/2.
+None. Q6 was answered on 2026-11-06 (0.1.0 is a GitHub release), which
+unblocked Stage 9; Q5 now concerns only the CRAN version.
