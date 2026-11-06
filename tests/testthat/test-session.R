@@ -234,3 +234,52 @@ test_that("keepalive and message sizes must be finite and positive", {
     expect_error(parse_spark_url(u), class = "zuspark_url_error")
   }
 })
+
+test_that("every response path checks the session", {
+  # One response per path answers for another server-side session; each
+  # must be a session error. Config and the version call are tested above.
+  moved <- function(x) {
+    x$server_side_session_id <- "00000000-0000-4000-8000-000000000000"
+    x
+  }
+  unary_moved <- function(scenario, n) {
+    method <- fixture_calls(scenario)$method[[n]]
+    encode_response(moved(decode_fixture(scenario, n)), method)
+  }
+  sql <- "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)"
+
+  # ExecutePlan's stream (sql-query call 5).
+  local_replay("sql-query", responses = list(`5` = function(messages) edit_response(messages, 1L, moved)))
+  con <- replay_connect("sql-query")
+  q <- spark_sql(con, sql)
+  expect_error(spark_collect(q), class = "zuspark_session_error")
+  close_connection(con)
+
+  # The schema's AnalyzePlan (schema call 5).
+  local_replay("schema", responses = list(`5` = unary_moved("schema", 5L)))
+  con <- replay_connect("schema")
+  q <- spark_sql(con, schema_sql)
+  expect_error(spark_schema(q), class = "zuspark_session_error")
+  close_connection(con)
+
+  # FetchErrorDetails (error-details call 5).
+  local_replay("error-details", responses = list(
+    `3` = function(messages) {
+      list(spark_status_condition(error_id = decode_fixture("error-details", 5, "request")$error_id))
+    },
+    `5` = unary_moved("error-details", 5L)
+  ))
+  con <- replay_connect("error-details")
+  err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
+  expect_error(spark_error_details(err), class = "zuspark_session_error")
+  close_connection(con)
+
+  # An inline ReleaseExecute (reattach call 12, a release_until).
+  expect_false(is.null(decode_fixture("reattach", 12L, "request")$release_until))
+  local_replay("reattach", responses = list(`12` = unary_moved("reattach", 12L)))
+  con <- replay_connect("reattach")
+  spark_config(con, spark.sql.execution.arrow.maxRecordsPerBatch = 100)
+  q <- spark_sql(con, reattach_sql)
+  expect_error(spark_collect(q), class = "zuspark_session_error")
+  close_connection(con)
+})
