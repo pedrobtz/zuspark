@@ -205,10 +205,10 @@ url_number <- function(params, key, default) {
     return(default)
   }
   value <- suppressWarnings(as.numeric(params[[key]]))
-  if (is.na(value) || value < 0) {
+  if (is.na(value) || !is.finite(value) || value <= 0) {
     url_abort(
       "parameter",
-      sprintf("Parameter '%s' must be a non-negative number, not '%s'.", key, params[[key]])
+      sprintf("Parameter '%s' must be a positive number, not '%s'.", key, params[[key]])
     )
   }
   value
