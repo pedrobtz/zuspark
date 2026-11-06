@@ -632,7 +632,9 @@ without a zone, as `POSIXct` under every `lossy` policy, so the
 `decimal` and `zutempo` registers its exact targets with `zuarrow` yet
 (zuint#52, decimal#24, zutempo#94), so the "exact with" column holds
 only once they do; until then `lossy = "character"` gives exact text
-and `lossy = "allow"` the widened value.
+and `lossy = "allow"` the widened value. *Decided 2026-11-06:* exact
+conversion is not part of 0.1.0; it comes in a later version, once the
+three packages register, with no change to zuspark (D10).
 
 `zuspark` adds nothing to this table: `zuarrow`'s exact-or-error rule
 (its §6.3) is the R edge. A `BIGINT` column with a value beyond 2⁵³ in

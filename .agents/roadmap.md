@@ -387,6 +387,12 @@ fixed. No new features. Only submission is left when it closes.
 
 ## After 0.1.0
 
+- [§7.7](design.md#77-types): exact conversion with `zuint`, `decimal`
+  and `zutempo` loaded. Deferred 2026-11-06 by the maintainer: 0.1.0
+  ships with `lossy` (error, text or widened) as the only R edge for
+  `BIGINT` beyond 2⁵³, `DECIMAL` and the time types; the guarded checks
+  in `test-types.R` stay and run once each package registers with
+  `zuarrow` (zuint#52, decimal#24, zutempo#94).
 - [§14](design.md#14-later-versions-in-the-order-they-are-expected): the DBI
   shim and dbplyr, parameterised SQL, `spark_write()`, a Databricks
   control-plane client, `VARIANT` decoding, chunked results, `CloneSession`
