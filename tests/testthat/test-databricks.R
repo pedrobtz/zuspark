@@ -2,19 +2,6 @@
 # connection string and the compute header, and the `databricks` scenario,
 # recorded from a Free Edition workspace on serverless compute, replays.
 
-local_connect_args <- function(env = parent.frame()) {
-  seen <- new.env(parent = emptyenv())
-  local_mocked_bindings(
-    spark_connect = function(url, ...) {
-      seen$url <- url
-      seen$args <- list(...)
-      invisible(NULL)
-    },
-    .env = env
-  )
-  seen
-}
-
 test_that("serverless sends the session id in x-databricks-session-id", {
   seen <- local_connect_args()
   id <- "6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a4b"

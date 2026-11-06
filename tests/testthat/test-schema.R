@@ -1,12 +1,6 @@
 # spark_schema() (design §6, decided 2026-11-05): Spark's schema through
 # AnalyzePlan, as DDL text.
 
-schema_sql <- paste(
-  "SELECT 1L AS id, CAST(1.5 AS DECIMAL(10, 2)) AS amount,",
-  "array(named_struct('k', 'a', 'v', map('x', 1))) AS nested,",
-  "INTERVAL '1' HOUR AS h, CAST(NULL AS STRING) AS maybe"
-)
-
 test_that("the schema comes from AnalyzePlan, without running the query", {
   calls <- local_replay("schema")
   con <- replay_connect("schema")

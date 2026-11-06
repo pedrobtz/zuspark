@@ -2,37 +2,6 @@
 # These run PySpark's recorded bytes through the conversion spark_collect()
 # makes, on every leg.
 
-exact <- list(
-  boolean = c(TRUE, NA),
-  tinyint = c(-7L, NA),
-  smallint = c(300L, NA),
-  int = c(2147483647L, NA),
-  bigint_small = c(2^53, NA),
-  float = c(1.5, NA),
-  double = c(0.1, NA),
-  string = c("naïve ✓", NA),
-  date = as.Date(c("2026-11-05", NA)),
-  null = NA
-)
-
-lossy <- data.frame(
-  name = c("bigint_large", "decimal", "interval_day_time"),
-  package = c("zuint", "decimal", "zutempo"),
-  text = c("9007199254740993", "12345678.91", "93784500000"),
-  stringsAsFactors = FALSE
-)
-
-# Timestamps are zuarrow's to decide (D10), and its rule moved: zuarrow
-# 0.1.0 as of 2026-11-04 errored without zutempo, as design §7.7 says;
-# its main as of 2026-11-05 (825c43b) reads timestamp[us] as POSIXct.
-# Either is accepted, at the instant PySpark recorded.
-timestamps <- data.frame(
-  name = c("timestamp", "timestamp_ntz"),
-  text = c("2026-11-05T10:11:12.123456Z", "2026-11-05T10:11:12.123456"),
-  stringsAsFactors = FALSE
-)
-instant <- as.POSIXct("2026-11-05 10:11:12.123456", tz = "UTC")
-
 test_that("timestamps follow zuarrow's rule, at PySpark's instant", {
   for (i in seq_len(nrow(timestamps))) {
     name <- timestamps$name[[i]]
