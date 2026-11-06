@@ -1,12 +1,5 @@
 # Interrupts (design §7.9).
 
-interrupt_response <- function(con, ids) {
-  zuproto::proto_encode(
-    list(session_id = con$session_id, server_side_session_id = con$server_side_session_id, interrupted_ids = ids),
-    "spark.connect.InterruptResponse", spark_pool()
-  )
-}
-
 test_that("an R interrupt during a stream cancels it and interrupts the operation", {
   local_replay("sql-query")
   con <- replay_connect("sql-query")

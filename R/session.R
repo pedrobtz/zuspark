@@ -47,6 +47,9 @@ spark_connect <- function(url = Sys.getenv("SPARK_REMOTE"), ...,
       "No connection string: pass `url`, or set SPARK_REMOTE, such as 'sc://localhost:15002'."
     )
   }
+  check_text_arg(user_id, "user_id")
+  check_text_arg(user_agent, "user_agent")
+  check_deadline(deadline)
   url <- append_url_params(url, list(...))
   u <- parse_spark_url(url)
 
@@ -343,11 +346,49 @@ append_url_params <- function(url, params) {
 # `headers`, then the bearer token, as PySpark's access-token credentials
 # send it.
 connection_metadata <- function(u, headers = NULL) {
-  metadata <- c(u$headers, check_headers(headers))
+  metadata <- check_header_text(c(u$headers, check_headers(headers)))
   if (!is.null(u$token)) {
     metadata[["authorization"]] <- paste("Bearer", u$token)
   }
   metadata
+}
+
+# A header gRPC can send: the name an HTTP token, the value printable
+# ASCII. zugrpc refuses the rest with its own error class; zuspark names
+# the header instead.
+check_header_text <- function(headers) {
+  bad_name <- !grepl("^[!#$%&'*+.^_`|~0-9A-Za-z-]+$", names(headers))
+  bad_value <- !grepl("^[\\x20-\\x7E\t]*$", headers, perl = TRUE)
+  bad <- bad_name | bad_value
+  if (any(bad)) {
+    url_abort(
+      "headers",
+      sprintf(
+        "Header '%s' can't be sent: a name must be letters, digits or !#$%%&'*+.^_`|~-, and a value printable ASCII.",
+        names(headers)[bad][[1L]]
+      )
+    )
+  }
+  headers
+}
+
+# NULL, or a single non-empty string.
+check_text_arg <- function(x, name) {
+  if (!is.null(x) && (!is.character(x) || length(x) != 1L || is.na(x) || !nzchar(x))) {
+    url_abort(name, sprintf("`%s` must be NULL or a single non-empty string.", name))
+  }
+  invisible(x)
+}
+
+# NULL, a positive number of seconds, or a date-time to stop at.
+check_deadline <- function(deadline) {
+  ok <- is.null(deadline) ||
+    (length(deadline) == 1L && inherits(deadline, "POSIXct") && !is.na(deadline)) ||
+    (is.numeric(deadline) && length(deadline) == 1L && !is.na(deadline) && deadline > 0)
+  if (!ok) {
+    url_abort("deadline", "`deadline` must be NULL, a positive number of seconds, or a date-time.")
+  }
+  invisible(deadline)
 }
 
 check_headers <- function(headers) {
