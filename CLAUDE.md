@@ -44,8 +44,10 @@ workspace (serverless only; classic clusters untested), with findings in
 §7 and §8, hostile responses are tested, and §10's benchmarks are in
 `.agents/benchmarks.md`. Stage 7, 2026-11-06: the README, the reference
 index and the articles "Get started", "Spark without the JVM" and
-"Connect to Databricks". Exact conversion of `int64`, `decimal128`
-and the time types waits on zuint, decimal and zutempo registering with
+"Connect to Databricks". Stage 8 turned on `nosuggests` and `nold`;
+Stage 9 made it 0.1.0, a GitHub release with `Remotes:` (design Q6). Exact
+conversion of `int64`, `decimal128`
+and the time types is left out of 0.1.0 and waits on zuint, decimal and zutempo registering with
 zuarrow (zuint#52, decimal#24, zutempo#94). The
 roadmap in
 `.agents/roadmap.md` takes it to v0.1.0. Release is gated on five

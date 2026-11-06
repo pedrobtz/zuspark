@@ -1,6 +1,6 @@
 Package: zuspark
 Title: Native Client for 'Spark Connect'
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: c(
     person("Pedro", "Baltazar", , "pedrobtz@gmail.com", role = c("aut", "cre", "cph")),
     person("The Apache Software Foundation", role = "cph",

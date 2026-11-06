@@ -260,6 +260,12 @@ reaches CRAN with it is zuhttp#40's to say (Q5).
 5. **`zuid` 0.1.0**: crandb `not_found`; Stages 0 to 11 closed,
    `CRAN-submission` (#15) open.
 
+*Decided 2026-11-06 (Q6):* 0.1.0 does not wait for this gate. It is a
+GitHub release that keeps `Remotes:`, with floors only where a sibling
+has a tagged release (`zuproto` and `zuid` 0.1.0); `zugrpc` and
+`zuarrow` are untagged at 0.0.0.9000 and come from their `main`. The
+gate below is the CRAN version's.
+
 Development uses `Remotes:` for the four `Imports`; `zugrpc`'s own
 `Remotes:` reaches `zuhttp`. Release is not a stage: after the last stage the
 package waits in `Pre-flight` until the gate holds, drops `Remotes:` and
@@ -965,7 +971,11 @@ any of them.
   already on `zuhttp` `main` (§4 update), so the question is now which
   `zuhttp` CRAN release carries it; zugrpc's roadmap records that
   0.1.0 does (its Stage 4).
-- **Q6.** Is v0.1.0 a CRAN submission? `CRAN intent` records it.
+- **Q6.** Is v0.1.0 a CRAN submission? `CRAN intent` records it. **Decided
+  2026-11-06 by the maintainer:** 0.1.0 is a GitHub release, with its
+  dependencies from GitHub through `Remotes:`; zuspark goes to CRAN in a
+  later version, once the gate of §4 holds. Exact type conversion (§7.7)
+  is left out of 0.1.0 the same day.
 
 ## 16. What this RFC does not decide
 
