@@ -45,5 +45,7 @@ test_that("live: Spark 4.2.1 refuses to send TIME as Arrow", {
   con <- local_live_connection()
   q <- spark_sql(con, "SELECT TIME '10:11:12' AS c")
   expect_identical(spark_schema(q)$type, "time(6)")
-  expect_error(spark_collect(q), "UNSUPPORTED_TIME_TYPE")
+  err <- tryCatch(spark_collect(q), error = identity)
+  expect_s3_class(err, "zuspark_sql_error")
+  expect_identical(err$error_class, "UNSUPPORTED_TIME_TYPE")
 })
