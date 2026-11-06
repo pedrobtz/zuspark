@@ -1,6 +1,6 @@
 # Changelog
 
-## zuspark 0.0.0.9000
+## zuspark 0.1.0
 
 - [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
   opens a session on a Spark Connect server from an `sc://` connection
@@ -63,8 +63,8 @@
   instead of failing every session check.
 
 - Arrow data from the server that zuarrow refuses as malformed, over its
-  limits or not decompressible is a `zuspark_protocol_error`; before,
-  only malformed data was.
+  limits or that does not decompress is a `zuspark_protocol_error`;
+  before, only malformed data was.
 
 - An R interrupt while a query runs cancels it and stops the job on the
   server (`zuspark_interrupt_error`);

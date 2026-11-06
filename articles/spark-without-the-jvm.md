@@ -26,7 +26,7 @@ shows what it was built with.
 
 library(zuspark)
 zuspark_info()
-#> zuspark 0.0.0.9000, Spark Connect protocol v4.2.1
+#> zuspark 0.1.0, Spark Connect protocol v4.2.1
 #>   descriptors: fba77546a88f7e96
 #>   zuproto:     0.1.0
 #>   zugrpc:      0.0.0.9000 on zuhttp 0.1.0
@@ -52,7 +52,7 @@ con <- spark_connect()
 q <- spark_sql(con, "SELECT id, id % 7 AS weekday, rand(42) AS amount FROM range(1000000)")
 system.time(df <- spark_collect(q))
 #>    user  system elapsed 
-#>    0.21    0.04    0.71
+#>   0.275   0.037   0.933
 nrow(df)
 #> [1] 1000000
 q

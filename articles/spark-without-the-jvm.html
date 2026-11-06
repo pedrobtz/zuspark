@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zuspark</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,7 +90,7 @@ with.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pedrobtz.github.io/zuspark/">zuspark</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/zuspark_info.html">zuspark_info</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; zuspark 0.0.0.9000, Spark Connect protocol v4.2.1</span></span>
+<span><span class="co">#&gt; zuspark 0.1.0, Spark Connect protocol v4.2.1</span></span>
 <span><span class="co">#&gt;   descriptors: fba77546a88f7e96</span></span>
 <span><span class="co">#&gt;   zuproto:     0.1.0</span></span>
 <span><span class="co">#&gt;   zugrpc:      0.0.0.9000 on zuhttp 0.1.0</span></span></code></pre></div>
@@ -110,7 +110,7 @@ finishes or fails.</p>
 <span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT id, id % 7 AS weekday, rand(42) AS amount FROM range(1000000)"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;    0.21    0.04    0.71</span></span>
+<span><span class="co">#&gt;   0.275   0.037   0.933</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1000000</span></span>
 <span><span class="va">q</span></span>

@@ -13,12 +13,12 @@
 ## Citation
 
 Baltazar P (2026). *zuspark: Native Client for 'Spark Connect'*. R
-package version 0.0.0.9000, <https://pedrobtz.github.io/zuspark/>.
+package version 0.1.0, <https://pedrobtz.github.io/zuspark/>.
 
     @Manual{,
       title = {zuspark: Native Client for 'Spark Connect'},
       author = {Pedro Baltazar},
       year = {2026},
-      note = {R package version 0.0.0.9000},
+      note = {R package version 0.1.0},
       url = {https://pedrobtz.github.io/zuspark/},
     }

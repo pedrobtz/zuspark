@@ -19,7 +19,7 @@ A `zuspark_info` list: `version`, `spark` (the protocol's Spark tag),
 
 ``` r
 zuspark_info()
-#> zuspark 0.0.0.9000, Spark Connect protocol v4.2.1
+#> zuspark 0.1.0, Spark Connect protocol v4.2.1
 #>   descriptors: fba77546a88f7e96
 #>   zuproto:     0.1.0
 #>   zugrpc:      0.0.0.9000 on zuhttp 0.1.0
