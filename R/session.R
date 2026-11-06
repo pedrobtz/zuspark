@@ -68,7 +68,12 @@ spark_connect <- function(url = Sys.getenv("SPARK_REMOTE"), ...,
   con$client_type <- client_type(user_agent %||% u$user_agent)
   con$deadline <- deadline %||% 30
   con$transport <- getOption("zuspark.transport", grpc_transport)
-  con$channel <- zugrpc::grpc_channel(
+  # The channel holds the bearer token in its headers, so it is kept in the
+  # namespace's registry, not on the connection: a query or an error that
+  # is saved or sent to another process carries the connection, and with
+  # it only the key (#26).
+  con$channel_key <- new_uuid()
+  channels[[con$channel_key]] <- zugrpc::grpc_channel(
     u$url,
     headers = if (length(metadata)) metadata,
     keepalive = u$keepalive,
@@ -236,10 +241,26 @@ release_session <- function(con, allow_reconnect = FALSE, deadline = con$deadlin
 
 close_connection <- function(con) {
   con$released <- TRUE
-  if (!is.null(con$channel)) {
-    try(zugrpc::grpc_close(con$channel), silent = TRUE)
+  key <- con$channel_key
+  if (!is.null(key) && exists(key, envir = channels, inherits = FALSE)) {
+    try(zugrpc::grpc_close(channels[[key]]), silent = TRUE)
+    rm(list = key, envir = channels)
   }
   invisible()
+}
+
+# The connections' channels, by key; see spark_connect().
+channels <- new.env(parent = emptyenv())
+
+connection_channel <- function(con) {
+  key <- con$channel_key
+  if (is.null(key) || !exists(key, envir = channels, inherits = FALSE)) {
+    zuspark_abort(
+      "zuspark_session_error",
+      "This connection has no channel in this R session: it was closed, or made in another session. Reconnect with `spark_connect()`."
+    )
+  }
+  channels[[key]]
 }
 
 # Best effort, as PySpark's: a short deadline, and never an error from a

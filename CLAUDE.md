@@ -165,6 +165,10 @@ Licences of the bundled protocol files are in
 - **A new execution path goes through `execute_plan()`.** It is what
   releases the server's buffer; an ExecutePlan that bypasses it leaves
   the result in the server's memory until the session dies.
+- **The channel is never stored on the connection.** It lives in the
+  namespace's `channels` registry, reached by `connection_channel(con)`:
+  its headers hold the bearer token, and connections travel inside
+  queries and errors that users save or send to other processes (#26).
 - **The transport is read from `con$transport`, never from the option at
   call time.** A finalizer runs after the test that set the option has
   gone; binding at connect is what keeps it off the network.

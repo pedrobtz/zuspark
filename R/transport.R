@@ -55,9 +55,9 @@ decode_response <- function(bytes, type) {
 grpc_transport <- function(con, method, bytes, deadline, streaming = FALSE) {
   path <- paste0(spark_service, method)
   if (!streaming) {
-    return(zugrpc::grpc_call(con$channel, path, bytes, deadline = deadline)$message)
+    return(zugrpc::grpc_call(connection_channel(con), path, bytes, deadline = deadline)$message)
   }
-  stream <- zugrpc::grpc_stream(con$channel, path, bytes, deadline = deadline)
+  stream <- zugrpc::grpc_stream(connection_channel(con), path, bytes, deadline = deadline)
   list(next_message = stream$next_message, cancel = stream$cancel)
 }
 
