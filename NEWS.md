@@ -44,6 +44,10 @@
 * `spark_connect()` accepts a `session_id` with attributes, such as a
   `zuid::uuid()`, instead of failing every session check.
 
+* Arrow data from the server that zuarrow refuses as malformed, over its
+  limits or not decompressible is a `zuspark_protocol_error`; before,
+  only malformed data was.
+
 * An R interrupt while a query runs cancels it and stops the job on the
   server (`zuspark_interrupt_error`); `spark_interrupt()` stops every
   operation of the session, or one.

@@ -839,6 +839,13 @@ Guesses until Stage 2 measures PySpark; the transport and decoding are
 the siblings', so a missed target is theirs to profile and this RFC's
 to record.
 
+*Measured 2026-11-06 (Stage 6), in [benchmarks.md](benchmarks.md):*
+connect (65 ms) and the round trip (0.92× of PySpark) are met. The
+10⁷-row collect is 1.78× of `toArrow()`, in zugrpc's stream reading
+(zugrpc#55), and 0.76× of `toPandas()`. The two memory rows are not met
+by §7.5's design, which holds every batch's IPC bytes in R before
+decoding; batch-by-batch decoding is §14's chunked results.
+
 ## 11. Roadmap
 
 The stages, their order, exit criteria and CI tiers are in
