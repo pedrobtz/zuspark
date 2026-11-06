@@ -203,18 +203,19 @@ test_that("a session id with attributes, such as zuid's uuid, is kept as a plain
 test_that("a saved connection, query or error does not hold the token", {
   secret <- "zuspark-test-secret-7f3a"
   url <- sprintf("sc://fixture.invalid/;token=%s", secret)
-  # Serialised as a user's object would be: with the real transport bound,
-  # not the fake one, whose closure holds this test's `secret`.
+  # Serialised without the transport binding: in use it is zuspark's own
+  # function, which holds no data, but here it is the fake channel, whose
+  # closure reaches this test's `secret`.
   holds_token <- function(x, con) {
     fake <- con$transport
-    con$transport <- grpc_transport
+    con$transport <- NULL
     on.exit(con$transport <- fake)
     length(grepRaw(secret, serialize(x, NULL), fixed = TRUE)) > 0L
   }
   # Which fields hold it, to say where on failure.
   where_token <- function(x, con) {
     fake <- con$transport
-    con$transport <- grpc_transport
+    con$transport <- NULL
     on.exit(con$transport <- fake)
     envs <- if (is.environment(x)) x else as.environment(unclass(x))
     hits <- Filter(function(n) {
