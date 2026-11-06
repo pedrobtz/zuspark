@@ -60,13 +60,11 @@ spark_config <- function(con, ...) {
 }
 
 config_value <- function(v) {
-  if (is.logical(v) && length(v) == 1L) {
-    return(if (v) "true" else "false")
-  }
-  if (!(is.character(v) || is.numeric(v)) || length(v) != 1L) {
+  text <- scalar_text(v)
+  if (is.null(text)) {
     zuspark_abort("zuspark_error", "Each setting's value must be a single string, number or logical.")
   }
-  as.character(v)
+  text
 }
 
 config_rpc <- function(con, operation) {

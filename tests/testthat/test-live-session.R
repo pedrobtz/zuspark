@@ -33,9 +33,10 @@ test_that("live: a released session id is retired unless reconnects are allowed"
   con <- spark_connect(remote)
   id <- spark_session_id(con)[["client"]]
   expect_true(spark_disconnect(con))
-  # Spark answers INTERNAL with INVALID_HANDLE.SESSION_CLOSED; Stage 4 maps
-  # Spark's errors to zuspark's classes.
-  expect_error(spark_connect(remote, session_id = id), "SESSION_CLOSED")
+  # Spark answers INTERNAL with INVALID_HANDLE.SESSION_CLOSED.
+  err <- tryCatch(spark_connect(remote, session_id = id), error = identity)
+  expect_s3_class(err, "zuspark_sql_error")
+  expect_identical(err$error_class, "INVALID_HANDLE.SESSION_CLOSED")
 
   con <- spark_connect(remote)
   id <- spark_session_id(con)[["client"]]

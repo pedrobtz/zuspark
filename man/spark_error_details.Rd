@@ -18,6 +18,8 @@ list of \code{type} (the class hierarchy), \code{message}, \code{error_class},
 \code{sql_state}, \code{message_parameters}, \code{cause} (the index of its cause in
 the list, or \code{NA}), \code{stack} (a data frame of \code{class}, \code{method}, \code{file}
 and \code{line}) and \code{contexts} (a data frame of the query fragments).
+When the server no longer holds the details, \code{spark_error_details()}
+raises a \code{zuspark_error} instead.
 }
 \description{
 A \code{zuspark_sql_error} carries Spark's error class, SQLSTATE, message
