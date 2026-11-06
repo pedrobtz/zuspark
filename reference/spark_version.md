@@ -33,6 +33,6 @@ spark_version(con)
 #> [1] "4.2.1"
 spark_session_id(con)
 #>                                 client                                 server 
-#> "66770b5e-9ebc-4c90-aced-a25112a5c90d" "cf5f6123-1129-4ca1-9151-8685517be931" 
+#> "64fdccd8-b19c-416f-8a8a-233660b0f16c" "6700772b-d32a-4eee-82e1-5d84e9f5f0f1" 
 spark_disconnect(con)
 ```

@@ -110,6 +110,8 @@
 <li>
 <strong>A new execution path goes through <code>execute_plan()</code>.</strong> It is what releases the server’s buffer; an ExecutePlan that bypasses it leaves the result in the server’s memory until the session dies.</li>
 <li>
+<strong>The channel is never stored on the connection.</strong> It lives in the namespace’s <code>channels</code> registry, reached by <code>connection_channel(con)</code>: its headers hold the bearer token, and connections travel inside queries and errors that users save or send to other processes (#26).</li>
+<li>
 <strong>The transport is read from <code>con$transport</code>, never from the option at call time.</strong> A finalizer runs after the test that set the option has gone; binding at connect is what keeps it off the network.</li>
 <li>
 <strong>zuspark’s error classes keep zugrpc’s after them.</strong> The reattach loop and <code>release_session()</code> match <code>zugrpc_error_transport</code> and <code>zugrpc_error_unimplemented</code> on conditions zuspark has already converted; dropping zugrpc’s classes would break both silently.</li>
