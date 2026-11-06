@@ -52,14 +52,18 @@ and SQL with reattachable execution:
 [`spark_error_details()`](https://pedrobtz.github.io/zuspark/reference/spark_error_details.md),
 interrupts and
 [`spark_interrupt()`](https://pedrobtz.github.io/zuspark/reference/spark_interrupt.md)
-(Stage 4). Exact conversion of `int64`, `decimal128` and the time types
-waits on zuint, decimal and zutempo registering with zuarrow (zuint#52,
-decimal#24, zutempo#94). The roadmap in `.agents/roadmap.md` takes it to
-v0.1.0. Release is gated on five siblings reaching CRAN (design §4).
-None is on CRAN yet; `zugrpc` (verified 2026-11-05 at `ba9d83b`) already
-works against live Spark on `zuhttp`’s and `zuproto`’s `main`, and its
-own release waits on zuhttp#40 and zuproto#13. Its R API can still
-change before then.
+(Stage 4). Stage 5, 2026-11-06:
+[`spark_connect_databricks()`](https://pedrobtz.github.io/zuspark/reference/spark_connect_databricks.md),
+checked on a Databricks Free Edition workspace (serverless only; classic
+clusters untested), with findings in `.agents/databricks.md`. Exact
+conversion of `int64`, `decimal128` and the time types waits on zuint,
+decimal and zutempo registering with zuarrow (zuint#52, decimal#24,
+zutempo#94). The roadmap in `.agents/roadmap.md` takes it to v0.1.0.
+Release is gated on five siblings reaching CRAN (design §4). None is on
+CRAN yet; `zugrpc` (verified 2026-11-05 at `ba9d83b`) already works
+against live Spark on `zuhttp`’s and `zuproto`’s `main`, and its own
+release waits on zuhttp#40 and zuproto#13. Its R API can still change
+before then.
 
 ## Versions and dependents
 
@@ -97,6 +101,12 @@ ZUSPARK_TEST_REMOTE_CUT=sc://localhost:15003 \
   Rscript -e 'devtools::test(filter = "live")'
 ```
 
+The `databricks` fixture comes from a workspace instead, by
+`tools/record-databricks.R` with `DATABRICKS_HOST` and
+`DATABRICKS_TOKEN` set; it scrubs the workspace’s names and fails if one
+survives. Keep the credentials outside the repository
+(`.zuspark-databricks.env` is ignored in case a copy lands here).
+
 Re-record the fixtures when a stage adds an RPC scenario or the request
 shape changes, and commit them with the change.
 
@@ -125,6 +135,9 @@ See `.agents/design.md` for the why; this is the where.
   completion or abandonment, and the per-response checks.
   [R/sql.R](https://pedrobtz.github.io/zuspark/R/sql.R) builds the user
   verbs on it.
+- [R/databricks.R](https://pedrobtz.github.io/zuspark/R/databricks.R):
+  [`spark_connect_databricks()`](https://pedrobtz.github.io/zuspark/reference/spark_connect_databricks.md),
+  the connection string and compute header Databricks needs.
 - [R/url.R](https://pedrobtz.github.io/zuspark/R/url.R) parses `sc://`
   strings; [R/session.R](https://pedrobtz.github.io/zuspark/R/session.R)
   holds the connection, an environment of class `zuspark_connection`, so

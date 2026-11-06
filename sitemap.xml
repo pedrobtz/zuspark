@@ -3,6 +3,7 @@
 <url><loc>https://pedrobtz.github.io/zuspark/CLAUDE.html</loc></url>
 <url><loc>https://pedrobtz.github.io/zuspark/LICENSE-text.html</loc></url>
 <url><loc>https://pedrobtz.github.io/zuspark/LICENSE.html</loc></url>
+<url><loc>https://pedrobtz.github.io/zuspark/articles/databricks.html</loc></url>
 <url><loc>https://pedrobtz.github.io/zuspark/articles/index.html</loc></url>
 <url><loc>https://pedrobtz.github.io/zuspark/articles/zuspark.html</loc></url>
 <url><loc>https://pedrobtz.github.io/zuspark/authors.html</loc></url>
@@ -12,6 +13,7 @@
 <url><loc>https://pedrobtz.github.io/zuspark/reference/spark_collect.html</loc></url>
 <url><loc>https://pedrobtz.github.io/zuspark/reference/spark_config.html</loc></url>
 <url><loc>https://pedrobtz.github.io/zuspark/reference/spark_connect.html</loc></url>
+<url><loc>https://pedrobtz.github.io/zuspark/reference/spark_connect_databricks.html</loc></url>
 <url><loc>https://pedrobtz.github.io/zuspark/reference/spark_error_details.html</loc></url>
 <url><loc>https://pedrobtz.github.io/zuspark/reference/spark_interrupt.html</loc></url>
 <url><loc>https://pedrobtz.github.io/zuspark/reference/spark_schema.html</loc></url>

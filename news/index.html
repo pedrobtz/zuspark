@@ -17,6 +17,10 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/zuspark.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/databricks.html">Connect to Databricks</a></li>
+  </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -41,6 +45,8 @@
 <li><p><code><a href="../reference/spark_config.html">spark_config()</a></code> reads every setting of the session, reads named ones, sets and unsets them, returning the previous values so that they can be restored.</p></li>
 <li><p><code><a href="../reference/spark_version.html">spark_version()</a></code> and <code><a href="../reference/spark_version.html">spark_session_id()</a></code> report the server’s Spark version and the session’s client and server ids. <code><a href="../reference/zuspark_info.html">zuspark_info()</a></code> reports the versions zuspark was built with.</p></li>
 <li><p>A Spark error is a <code>zuspark_sql_error</code> carrying Spark’s error class, SQLSTATE, message parameters and exception classes; <code><a href="../reference/spark_error_details.html">spark_error_details()</a></code> fetches its full cause chain and stack trace. Other failed calls are <code>zuspark_rpc_error</code>.</p></li>
+<li><p><code><a href="../reference/spark_connect_databricks.html">spark_connect_databricks()</a></code> connects to a Databricks workspace, on serverless compute by default or on a cluster given by <code>cluster_id</code>, from <code>DATABRICKS_HOST</code> and <code>DATABRICKS_TOKEN</code>. The “Connect to Databricks” article shows how, including Databricks Free Edition.</p></li>
+<li><p><code><a href="../reference/spark_connect.html">spark_connect()</a></code> accepts a <code>session_id</code> with attributes, such as a <code><a href="https://pedrobtz.github.io/zuid/reference/uuid.html" class="external-link">zuid::uuid()</a></code>, instead of failing every session check.</p></li>
 <li><p>An R interrupt while a query runs cancels it and stops the job on the server (<code>zuspark_interrupt_error</code>); <code><a href="../reference/spark_interrupt.html">spark_interrupt()</a></code> stops every operation of the session, or one.</p></li>
 <li><p>Errors are conditions inheriting from <code>zuspark_error</code>: <code>zuspark_url_error</code> for a malformed connection string, <code>zuspark_version_error</code> for a server too old, and <code>zuspark_session_error</code> for a session that was released or that the server lost, and <code>zuspark_protocol_error</code> for a response that contradicts the protocol.</p></li>
 <li><p>zuspark ships the Spark Connect protocol definitions of Apache Spark 4.2.1 as a compiled descriptor set. It has no compiled code of its own.</p></li>

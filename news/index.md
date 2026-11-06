@@ -51,6 +51,17 @@
   fetches its full cause chain and stack trace. Other failed calls are
   `zuspark_rpc_error`.
 
+- [`spark_connect_databricks()`](https://pedrobtz.github.io/zuspark/reference/spark_connect_databricks.md)
+  connects to a Databricks workspace, on serverless compute by default
+  or on a cluster given by `cluster_id`, from `DATABRICKS_HOST` and
+  `DATABRICKS_TOKEN`. The “Connect to Databricks” article shows how,
+  including Databricks Free Edition.
+
+- [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
+  accepts a `session_id` with attributes, such as a
+  [`zuid::uuid()`](https://pedrobtz.github.io/zuid/reference/uuid.html),
+  instead of failing every session check.
+
 - An R interrupt while a query runs cancels it and stops the job on the
   server (`zuspark_interrupt_error`);
   [`spark_interrupt()`](https://pedrobtz.github.io/zuspark/reference/spark_interrupt.md)
