@@ -200,6 +200,41 @@ test_that("a session id with attributes, such as zuid's uuid, is kept as a plain
   expect_true(spark_disconnect(con))
 })
 
+test_that("invalid connect arguments are zuspark errors naming the part", {
+  local_replay("connect")
+  bad <- list(
+    list(args = list(user_id = 1), part = "user_id"),
+    list(args = list(user_id = NA_character_), part = "user_id"),
+    list(args = list(user_id = ""), part = "user_id"),
+    list(args = list(user_agent = 1), part = "user_agent"),
+    list(args = list(user_agent = NA_character_), part = "user_agent"),
+    list(args = list(deadline = "soon"), part = "deadline"),
+    list(args = list(deadline = -1), part = "deadline"),
+    list(args = list(deadline = c(1, 2)), part = "deadline"),
+    list(args = list(headers = c("bad name" = "v")), part = "headers"),
+    list(args = list(headers = c(`x-ok` = "a\r\nb")), part = "headers"),
+    list(args = list(headers = c(`x-ok` = "café")), part = "headers")
+  )
+  for (b in bad) {
+    err <- tryCatch(do.call(spark_connect, c(list("sc://fixture.invalid"), b$args)), error = identity)
+    expect_s3_class(err, "zuspark_url_error")
+    expect_identical(err$part, b$part)
+  }
+})
+
+test_that("a header parameter in the string is checked like `headers`", {
+  err <- tryCatch(spark_connect("sc://fixture.invalid/;x-bad=a%0Ab"), error = identity)
+  expect_s3_class(err, "zuspark_url_error")
+  expect_identical(err$part, "headers")
+})
+
+test_that("keepalive and message sizes must be finite and positive", {
+  for (u in c("sc://h/;grpc_keepalive_time_ms=0", "sc://h/;grpc_keepalive_timeout_ms=0",
+              "sc://h/;grpc_max_message_size=1e400", "sc://h/;grpc_max_message_size=0")) {
+    expect_error(parse_spark_url(u), class = "zuspark_url_error")
+  }
+})
+
 test_that("a saved connection, query or error does not hold the token", {
   secret <- "zuspark-test-secret-7f3a"
   url <- sprintf("sc://fixture.invalid/;token=%s", secret)
@@ -249,38 +284,4 @@ test_that("a connection unserialised in another session cannot reach the channel
   rm(list = copy$channel_key, envir = zuspark:::channels)
   expect_error(connection_channel(copy), class = "zuspark_session_error")
   close_connection(con)
-
-test_that("invalid connect arguments are zuspark errors naming the part", {
-  local_replay("connect")
-  bad <- list(
-    list(args = list(user_id = 1), part = "user_id"),
-    list(args = list(user_id = NA_character_), part = "user_id"),
-    list(args = list(user_id = ""), part = "user_id"),
-    list(args = list(user_agent = 1), part = "user_agent"),
-    list(args = list(user_agent = NA_character_), part = "user_agent"),
-    list(args = list(deadline = "soon"), part = "deadline"),
-    list(args = list(deadline = -1), part = "deadline"),
-    list(args = list(deadline = c(1, 2)), part = "deadline"),
-    list(args = list(headers = c("bad name" = "v")), part = "headers"),
-    list(args = list(headers = c(`x-ok` = "a\r\nb")), part = "headers"),
-    list(args = list(headers = c(`x-ok` = "café")), part = "headers")
-  )
-  for (b in bad) {
-    err <- tryCatch(do.call(spark_connect, c(list("sc://fixture.invalid"), b$args)), error = identity)
-    expect_s3_class(err, "zuspark_url_error")
-    expect_identical(err$part, b$part)
-  }
-})
-
-test_that("a header parameter in the string is checked like `headers`", {
-  err <- tryCatch(spark_connect("sc://fixture.invalid/;x-bad=a%0Ab"), error = identity)
-  expect_s3_class(err, "zuspark_url_error")
-  expect_identical(err$part, "headers")
-})
-
-test_that("keepalive and message sizes must be finite and positive", {
-  for (u in c("sc://h/;grpc_keepalive_time_ms=0", "sc://h/;grpc_keepalive_timeout_ms=0",
-              "sc://h/;grpc_max_message_size=1e400", "sc://h/;grpc_max_message_size=0")) {
-    expect_error(parse_spark_url(u), class = "zuspark_url_error")
-  }
 })
