@@ -191,3 +191,11 @@ test_that("zuspark_info() reports the protocol pin", {
   expect_identical(info$spark, "v4.2.1")
   expect_output(print(info), "Spark Connect protocol v4.2.1")
 })
+
+test_that("a session id with attributes, such as zuid's uuid, is kept as a plain string", {
+  local_replay("connect")
+  id <- structure(fixture_session_id("connect"), format = "uuid", class = c("zuid_uuid", "zuid"))
+  con <- spark_connect("sc://fixture.invalid", session_id = id, user_id = "zuspark")
+  expect_identical(spark_session_id(con)[["client"]], fixture_session_id("connect"))
+  expect_true(spark_disconnect(con))
+})
