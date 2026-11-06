@@ -42,7 +42,9 @@ interrupts and `spark_interrupt()` (Stage 4). Stage 5, 2026-11-06:
 workspace (serverless only; classic clusters untested), with findings in
 `.agents/databricks.md`. Stage 6, 2026-11-06: the live suite covers
 §7 and §8, hostile responses are tested, and §10's benchmarks are in
-`.agents/benchmarks.md`. Exact conversion of `int64`, `decimal128`
+`.agents/benchmarks.md`. Stage 7, 2026-11-06: the README, the reference
+index and the articles "Get started", "Spark without the JVM" and
+"Connect to Databricks". Exact conversion of `int64`, `decimal128`
 and the time types waits on zuint, decimal and zutempo registering with
 zuarrow (zuint#52, decimal#24, zutempo#94). The
 roadmap in
@@ -93,6 +95,13 @@ The `databricks` fixture comes from a workspace instead, by
 set; it scrubs the workspace's names and fails if one survives. Keep the
 credentials outside the repository (`.zuspark-databricks.env` is ignored
 in case a copy lands here).
+
+The README and the articles run against a server: render the README
+with `SPARK_REMOTE=sc://localhost:15002 Rscript -e
+'devtools::build_readme()'` and commit `README.md`; `pkgdown.yaml` starts
+Spark 4.2.1 and sets `SPARK_REMOTE` for the site, so a chunk that fails
+there fails the build. The Databricks article's chunks never run (they
+need a workspace).
 
 `tools/run-benchmarks.R <remote> <python>` measures design §10 against
 PySpark (`tools/benchmarks.py`, in a venv with `pyspark-client==4.2.1`

@@ -1,28 +1,144 @@
 
+<!-- README.md is generated from README.Rmd. Please edit that file. -->
+
 # zuspark
 
 <!-- badges: start -->
+
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![R-CMD-check](https://github.com/pedrobtz/zuspark/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pedrobtz/zuspark/actions/workflows/R-CMD-check.yaml)
 [![coverage](https://raw.githubusercontent.com/pedrobtz/zuspark/gh-pages/badges/coverage.svg)](https://github.com/pedrobtz/zuspark/actions/workflows/coverage.yaml)
 <!-- badges: end -->
 
-The goal of zuspark is to ...
+[Spark
+Connect](https://spark.apache.org/docs/latest/spark-connect-overview.html)
+lets a client run Spark SQL on a remote cluster over gRPC. Until now,
+reaching it from R meant a local Spark installation and its JVM, or a
+Python environment in between.
+
+zuspark is a Spark Connect client written in R. It connects to an
+`sc://` endpoint, runs SQL there and brings the result back as Arrow or
+as a data frame, with no JVM, no Python and no Spark installation on
+your machine.
+
+- **Only R packages.** gRPC, protocol buffers and Arrow come from
+  [zugrpc](https://github.com/pedrobtz/zugrpc),
+  [zuproto](https://github.com/pedrobtz/zuproto) and
+  [zuarrow](https://github.com/pedrobtz/zuarrow); zuspark itself has no
+  compiled code.
+- **Spark’s own protocol.** The message definitions ship with the
+  package, pinned to Spark 4.2.1, and the connection string is
+  PySpark’s.
+- **Exact by default.** A value R cannot hold exactly is an error, not a
+  silent rounding; you choose its text or a widened type instead.
+- **Results that survive a cut.** Long results are read with
+  reattachable execution: a stream cut by a proxy or a timeout resumes
+  where it stopped, and the server’s buffer is released as the rows are
+  read.
+- **Databricks too.** `spark_connect_databricks()` connects to a
+  workspace’s serverless compute or to a cluster.
 
 ## Installation
 
-You can install the development version of zuspark from [GitHub](https://github.com/) with:
+zuspark is not on CRAN yet. Install the development version from GitHub;
+pak also installs its dependencies, which are on GitHub too:
 
 ``` r
 # install.packages("pak")
 pak::pak("pedrobtz/zuspark")
 ```
 
-## Example
-
-This is a basic example which shows you how to solve a common problem:
+## Usage
 
 ``` r
 library(zuspark)
-## basic example code
 ```
 
+Connect to a Spark Connect server. A local one listens on port 15002;
+`spark_connect()` with no argument reads the `SPARK_REMOTE` environment
+variable.
+
+``` r
+con <- spark_connect("sc://localhost:15002")
+spark_version(con)
+#> [1] "4.2.1"
+```
+
+`spark_sql()` sends a query and returns it unexecuted; `spark_collect()`
+runs it and returns a data frame.
+
+``` r
+q <- spark_sql(con, "SELECT id, id % 3 AS bucket, CAST(id AS STRING) AS label FROM range(6)")
+spark_collect(q)
+#>   id bucket label
+#> 1  0      0     0
+#> 2  1      1     1
+#> 3  2      2     2
+#> 4  3      0     3
+#> 5  4      1     4
+#> 6  5      2     5
+```
+
+The work happens on the server: here Spark aggregates ten million rows,
+and only seven come back.
+
+``` r
+spark_collect(spark_sql(con, "
+  SELECT id % 7 AS weekday, count(*) AS n
+  FROM range(10000000)
+  GROUP BY weekday
+  ORDER BY weekday
+"))
+#>   weekday       n
+#> 1       0 1428572
+#> 2       1 1428572
+#> 3       2 1428572
+#> 4       3 1428571
+#> 5       4 1428571
+#> 6       5 1428571
+#> 7       6 1428571
+```
+
+Spark’s errors keep Spark’s error class and SQLSTATE.
+
+``` r
+err <- tryCatch(spark_sql(con, "SELECT * FROM sales"), error = identity)
+err$error_class
+#> [1] "TABLE_OR_VIEW_NOT_FOUND"
+err$sql_state
+#> [1] "42P01"
+```
+
+``` r
+spark_disconnect(con)
+```
+
+Every function but `zuspark_info()` starts with `spark_`, and every one
+after `spark_connect()` takes the connection, a query or an error first.
+
+## Learn more
+
+- [Get
+  started](https://pedrobtz.github.io/zuspark/articles/zuspark.html):
+  connecting, running SQL, types, errors and settings.
+- [Spark without the
+  JVM](https://pedrobtz.github.io/zuspark/articles/spark-without-the-jvm.html):
+  what zuspark is made of, and a Spark result handed to DuckDB.
+- [Connect to
+  Databricks](https://pedrobtz.github.io/zuspark/articles/databricks.html),
+  including Databricks Free Edition.
+- The [reference index](https://pedrobtz.github.io/zuspark/reference/).
+
+## Related work
+
+zuspark speaks the protocol defined by Apache Spark’s [Spark
+Connect](https://github.com/apache/spark/tree/master/sql/connect/common/src/main/protobuf)
+`.proto` files, and checks its results against PySpark’s. In R,
+[sparklyr](https://spark.posit.co/) reaches Spark Connect through
+[pysparklyr](https://github.com/mlverse/pysparklyr) and Python, and
+[SparkR](https://spark.apache.org/docs/latest/sparkr.html) through a
+local Spark;
+[spark-connect-go](https://github.com/apache/spark-connect-go) and
+[spark-connect-rust](https://github.com/apache/spark-connect-rust) are
+native clients in other languages.

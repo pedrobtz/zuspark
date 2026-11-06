@@ -2,3 +2,36 @@ url: https://pedrobtz.github.io/zuspark/
 template:
   bootstrap: 5
 
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - spark-without-the-jvm
+  - databricks
+
+reference:
+- title: Sessions
+  desc: Open, inspect and close a Spark Connect session.
+  contents:
+  - spark_connect
+  - spark_connect_databricks
+  - spark_version
+  - spark_config
+- title: SQL
+  desc: Run statements and read their results.
+  contents:
+  - spark_sql
+  - spark_collect
+  - spark_schema
+- title: Errors and interrupts
+  contents:
+  - spark_error_details
+  - spark_interrupt
+- title: About the package
+  contents:
+  - zuspark_info
+  - zuspark-package
