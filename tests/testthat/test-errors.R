@@ -92,3 +92,25 @@ test_that("Spark's JSON metadata parses", {
   expect_identical(parse_json_strings(NA), character())
   expect_identical(parse_json_strings("[]"), character())
 })
+
+test_that("details the server no longer holds are an error, not an empty entry", {
+  # The FetchErrorDetails answer (call 5) as the server gives it for an
+  # error id it has dropped: the session, and no errors.
+  recorded <- decode_fixture("error-details", 5)
+  empty <- encode_response(
+    list(session_id = recorded$session_id, server_side_session_id = recorded$server_side_session_id),
+    "FetchErrorDetails"
+  )
+  local_replay("error-details", responses = list(
+    `3` = function(messages) {
+      list(spark_status_condition(error_id = decode_fixture("error-details", 5, "request")$error_id))
+    },
+    `5` = empty
+  ))
+  con <- replay_connect("error-details")
+  err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
+  gone <- tryCatch(spark_error_details(err), error = identity)
+  expect_s3_class(gone, "zuspark_error")
+  expect_identical(gone$error_id, err$error_id)
+  close_connection(con)
+})
