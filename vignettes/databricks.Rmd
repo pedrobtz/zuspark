@@ -44,11 +44,22 @@ DATABRICKS_TOKEN=dapi...
 
 ## Connect to serverless compute
 
-Spark Connect on Databricks runs over TLS on port 443. Serverless compute
-also needs an `x-databricks-session-id` header that carries the session
-id; without it, the server answers *"Invalid compute mode headers"*.
-Choose the session id yourself, and give it to zuspark both as the session
-id and as that header:
+`spark_connect_databricks()` reads `DATABRICKS_HOST` and
+`DATABRICKS_TOKEN`, and connects to the workspace's serverless compute:
+
+```{r}
+con <- spark_connect_databricks()
+spark_version(con)
+```
+
+`spark_version()` reports the Spark version of the Databricks runtime
+behind the session. Serverless compute starts by itself when the session
+connects, and the first query can take a few seconds while it does.
+
+What it does is plain Spark Connect: TLS on port 443, the token as a
+bearer token, and an `x-databricks-session-id` header carrying the
+session id. Without that header, the server answers *"Invalid compute
+mode headers"*. The same connection with `spark_connect()`:
 
 ```{r}
 host <- sub("^https://", "", Sys.getenv("DATABRICKS_HOST"))
@@ -60,12 +71,7 @@ con <- spark_connect(
   session_id = session,
   headers = c("x-databricks-session-id" = session)
 )
-spark_version(con)
 ```
-
-`spark_version()` reports the Spark version of the Databricks runtime
-behind the session. Serverless compute starts by itself when the session
-connects, and the first query can take a few seconds while it does.
 
 ## Run SQL
 
@@ -112,14 +118,11 @@ spark_disconnect(con)
 
 ## Classic compute
 
-A workspace with clusters (not Free Edition) takes the cluster's id in an
-`x-databricks-cluster-id` header instead of the session header. The cluster
-must be running. This path has not been tested with zuspark yet:
+On a workspace with clusters (not Free Edition), give the cluster's id.
+zuspark then sends it in an `x-databricks-cluster-id` header instead of
+the session header. The cluster must be running. This path has not been
+run against a real cluster yet:
 
 ```{r}
-con <- spark_connect(
-  sprintf("sc://%s:443/;use_ssl=true", host),
-  token = Sys.getenv("DATABRICKS_TOKEN"),
-  headers = c("x-databricks-cluster-id" = "0123-456789-abcdefgh")
-)
+con <- spark_connect_databricks(cluster_id = "0123-456789-abcdefgh")
 ```
