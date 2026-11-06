@@ -193,3 +193,40 @@ test_that("a failed release after ResultComplete keeps the result", {
   expect_identical(calls$methods[c(4, 6)], c("ReleaseExecute", "ReleaseExecute"))
   close_connection(con)
 })
+
+test_that("a response for another operation, or a result without its parts, is a protocol error", {
+  sql <- "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)"
+  without <- function(member) {
+    function(messages) {
+      keep <- vapply(messages, function(m) {
+        is.null(zuproto::proto_decode(m, "spark.connect.ExecutePlanResponse", spark_pool())[[member]])
+      }, logical(1))
+      messages[keep]
+    }
+  }
+
+  # A response on the query's stream (call 5) for another operation.
+  local_replay("sql-query", responses = list(`5` = function(messages) {
+    edit_response(messages, 1L, function(x) {
+      x$operation_id <- "00000000-0000-4000-8000-000000000000"
+      x
+    })
+  }))
+  con <- replay_connect("sql-query")
+  q <- spark_sql(con, sql)
+  expect_error(spark_collect(q), class = "zuspark_protocol_error")
+  close_connection(con)
+
+  # The SqlCommand (call 3) answered without its SqlCommandResult.
+  local_replay("sql-query", responses = list(`3` = without("sql_command_result")))
+  con <- replay_connect("sql-query")
+  expect_error(spark_sql(con, sql), class = "zuspark_protocol_error")
+  close_connection(con)
+
+  # The query (call 5) finished without a single batch.
+  local_replay("sql-query", responses = list(`5` = without("arrow_batch")))
+  con <- replay_connect("sql-query")
+  q <- spark_sql(con, sql)
+  expect_error(spark_collect(q), class = "zuspark_protocol_error")
+  close_connection(con)
+})
