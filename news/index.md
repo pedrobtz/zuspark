@@ -62,6 +62,10 @@
   [`zuid::uuid()`](https://pedrobtz.github.io/zuid/reference/uuid.html),
   instead of failing every session check.
 
+- Arrow data from the server that zuarrow refuses as malformed, over its
+  limits or not decompressible is a `zuspark_protocol_error`; before,
+  only malformed data was.
+
 - An R interrupt while a query runs cancels it and stops the job on the
   server (`zuspark_interrupt_error`);
   [`spark_interrupt()`](https://pedrobtz.github.io/zuspark/reference/spark_interrupt.md)
