@@ -212,19 +212,25 @@ read_command_rows <- function(data) {
   arrow_call(zuarrow::arrow_read(data))
 }
 
-# zuarrow's format errors mean the server sent bytes that are not what the
-# protocol says (design §7.5); everything else, a lossy column for one,
-# reaches the caller as zuarrow raised it.
+# zuarrow's format, limit and codec errors are how it reports hostile
+# input: the server sent bytes that are not what the protocol says (design
+# §7.5), or that claim more than zuarrow's limits allow, or a compressed
+# buffer that does not decompress. Everything else, a lossy column for
+# one, reaches the caller as zuarrow raised it.
 arrow_call <- function(expr) {
   tryCatch(
     expr,
-    zuarrow_format_error = function(e) {
-      zuspark_abort(
-        "zuspark_protocol_error",
-        paste("The server's Arrow data is malformed:", conditionMessage(e)),
-        parent = e
-      )
-    }
+    zuarrow_format_error = function(e) arrow_protocol_error(e, "is malformed"),
+    zuarrow_limit_error = function(e) arrow_protocol_error(e, "is over zuarrow's limits"),
+    zuarrow_codec_error = function(e) arrow_protocol_error(e, "does not decompress")
+  )
+}
+
+arrow_protocol_error <- function(e, what) {
+  zuspark_abort(
+    "zuspark_protocol_error",
+    sprintf("The server's Arrow data %s: %s", what, conditionMessage(e)),
+    parent = e
   )
 }
 
