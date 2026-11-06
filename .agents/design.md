@@ -669,6 +669,22 @@ recollection) and what the workspace expects in `user_agent` are Stage
 5's questions (Q3). A `spark_connect_databricks(host, token,
 cluster_id)` convenience follows once they are answered.
 
+**Decided 2026-11-06** (Q3, checked against a Databricks Free Edition
+workspace, details in [databricks.md](databricks.md)): the endpoint is
+`sc://<workspace>:443/;use_ssl=true` with the token as bearer.
+Serverless compute requires an `x-databricks-session-id` header, and
+refuses every call without one ("Invalid compute mode headers"); any
+UUID is accepted, and zuspark sends the session id. A cluster is chosen
+with `x-databricks-cluster-id` (the name is confirmed by the server's
+`NOT_FOUND` for a made-up id; no real cluster was run). `user_agent`
+needs nothing Databricks-specific. Since the header carries a value
+zuspark generates, the convenience is warranted:
+`spark_connect_databricks(host, token, cluster_id = NULL, ...)` reads
+`DATABRICKS_HOST` and `DATABRICKS_TOKEN` by default, takes the host as
+the browser shows it, and adds the session header for serverless or the
+cluster header for a cluster. `spark_connect()` is unchanged: the same
+session works through it with `headers =`.
+
 ### 7.9 Interrupts and deadlines
 
 An R interrupt while a stream is being read cancels the gRPC call
@@ -916,7 +932,11 @@ any of them.
   ignores the unknown field 6 and reads `sql`: one code path, no version
   branch. Not yet run against a 3.5 server.
 - **Q3.** The Databricks header names and serverless requirements (§7.8)
-  are unverified; Stage 5 answers against a workspace.
+  are unverified; Stage 5 answers against a workspace. **Answered
+  2026-11-06** against a Free Edition workspace: serverless needs
+  `x-databricks-session-id`, a cluster `x-databricks-cluster-id`, and
+  `user_agent` needs nothing; see §7.8 and
+  [databricks.md](databricks.md).
 - **Q4.** Does `zuhttp`'s HTTP/2 streaming expose cancellation in a way
   an R interrupt can reach through `zugrpc` while `zuarrow`'s
   `get_next()` is blocked in C? If not, §7.9's interrupt path waits for
@@ -977,7 +997,8 @@ Checked on 3 November 2026:
 
 Not verified, left to the stage named: the Databricks header names and
 serverless requirements, and what `databricks-connect` sends as
-`user_agent` (Stage 5); `TimeType`'s Arrow form beyond "through
+`user_agent` (Stage 5; answered 2026-11-06 in §7.8, against a workspace
+rather than by reading `databricks-connect`); `TimeType`'s Arrow form beyond "through
 `TypeApiOps` with precision in field metadata" (Stage 3); the exact
 `INVALID_HANDLE.OPERATION_NOT_FOUND` string and retry conditions in
 `reattach.py`, read from its docstring only (Stage 2); the default of
