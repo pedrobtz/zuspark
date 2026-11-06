@@ -1,0 +1,125 @@
+---
+title: "Connect to Databricks"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Connect to Databricks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+# Not evaluated: it needs a Databricks workspace and a token.
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+Databricks workspaces speak Spark Connect, so zuspark can query them
+directly: no `databricks-connect`, no Python and no JVM. You need the
+workspace's URL, a personal access token, and one extra header that tells
+Databricks which compute to run on. This article shows serverless compute,
+which is all that Databricks Free Edition offers and which needs no cluster
+to be started.
+
+```{r setup}
+library(zuspark)
+```
+
+## Get a workspace URL and a token
+
+The workspace URL is the start of the address in your browser while you
+are in the workspace, up to the domain, such as
+`https://dbc-1a2b3c4d-5e6f.cloud.databricks.com`. Leave out the path and
+the `?o=` part.
+
+To create a token, click your avatar in the top right corner, then
+**Settings**, **Developer**, and **Manage** next to **Access tokens**.
+Generate a new token and copy it: Databricks shows it only once.
+
+Keep both out of your scripts. One way is to put them in `~/.Renviron`,
+which R reads at start-up:
+
+```sh
+DATABRICKS_HOST=https://dbc-1a2b3c4d-5e6f.cloud.databricks.com
+DATABRICKS_TOKEN=dapi...
+```
+
+## Connect to serverless compute
+
+Spark Connect on Databricks runs over TLS on port 443. Serverless compute
+also needs an `x-databricks-session-id` header that carries the session
+id; without it, the server answers *"Invalid compute mode headers"*.
+Choose the session id yourself, and give it to zuspark both as the session
+id and as that header:
+
+```{r}
+host <- sub("^https://", "", Sys.getenv("DATABRICKS_HOST"))
+session <- as.character(zuid::uuid(version = 4))
+
+con <- spark_connect(
+  sprintf("sc://%s:443/;use_ssl=true", host),
+  token = Sys.getenv("DATABRICKS_TOKEN"),
+  session_id = session,
+  headers = c("x-databricks-session-id" = session)
+)
+spark_version(con)
+```
+
+`spark_version()` reports the Spark version of the Databricks runtime
+behind the session. Serverless compute starts by itself when the session
+connects, and the first query can take a few seconds while it does.
+
+## Run SQL
+
+From here on, a Databricks session works like any other Spark Connect
+session:
+
+```{r}
+q <- spark_sql(con, "SELECT id, id * 2 AS twice FROM range(5)")
+spark_schema(q)
+spark_collect(q)
+```
+
+Tables in Unity Catalog are queried by their three-part names, such as
+those of the `samples` catalog, where a workspace has it:
+
+```{r}
+spark_collect(spark_sql(con, "
+  SELECT pickup_zip, count(*) AS trips
+  FROM samples.nyctaxi.trips
+  GROUP BY pickup_zip
+  ORDER BY trips DESC
+  LIMIT 5
+"))
+```
+
+Spark's errors arrive with their error class and SQLSTATE, and
+`spark_error_details()` asks the workspace for the rest:
+
+```{r}
+err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
+err$error_class
+err$sql_state
+spark_error_details(err)[[1]]$message
+```
+
+## Disconnect
+
+`spark_disconnect()` releases the session on the workspace, so its
+serverless compute can stop:
+
+```{r}
+spark_disconnect(con)
+```
+
+## Classic compute
+
+A workspace with clusters (not Free Edition) takes the cluster's id in an
+`x-databricks-cluster-id` header instead of the session header. The cluster
+must be running. This path has not been tested with zuspark yet:
+
+```{r}
+con <- spark_connect(
+  sprintf("sc://%s:443/;use_ssl=true", host),
+  token = Sys.getenv("DATABRICKS_TOKEN"),
+  headers = c("x-databricks-cluster-id" = "0123-456789-abcdefgh")
+)
+```
