@@ -179,3 +179,17 @@ test_that("a stream that never progresses is a protocol error", {
   expect_error(spark_collect(q), "no progress", class = "zuspark_protocol_error")
   close_connection(con)
 })
+
+test_that("a failed release after ResultComplete keeps the result", {
+  # Calls 4 and 6 are the releases after the SqlCommand's and the query's
+  # ResultComplete. Both fail; the statement ran, so neither is an error.
+  fail <- function(bytes) stop(grpc_transport_condition())
+  calls <- local_replay("sql-query", responses = list("4" = fail, "6" = fail))
+  con <- replay_connect("sql-query")
+  q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
+  expect_s3_class(q, "zuspark_query")
+  df <- spark_collect(q)
+  expect_identical(nrow(df), 5L)
+  expect_identical(calls$methods[c(4, 6)], c("ReleaseExecute", "ReleaseExecute"))
+  close_connection(con)
+})

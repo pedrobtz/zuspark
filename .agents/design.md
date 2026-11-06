@@ -538,7 +538,10 @@ minutes) or `senderMaxStreamSize` (1 GiB). The client's loop, after
 PySpark releases from a thread pool. `zuspark` has no threads: it
 releases every `k` responses inline on the same channel (`k` chosen at
 Stage 2, 16 to start), and always on completion. Nothing else is
-retried in v0.1.0 (D8).
+retried in v0.1.0 (D8). *2026-11-06 (#27):* the release after
+`ResultComplete` is best-effort, as the release on abandonment already
+was: a statement whose result is complete has run, and a failed release
+reported as its error would invite running it twice.
 
 *Decided 2026-11-05 (Stage 2):* `k` is 16. A cut stream reattaches;
 three reattaches in a row that bring no new response are a

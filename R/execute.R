@@ -73,7 +73,11 @@ execute_plan <- function(con, plan, on_response = function(response) NULL,
     stream <- reattach_execute(con, op, run, request, ended)
     run$reattaches <- run$reattaches + 1L
   }
-  release_execute(con, op, all = TRUE)
+  # The result is complete: the statement ran, whatever the release does.
+  # A failed release must not read as a failed statement, which a caller
+  # might run again (D8); the server frees the buffer when the session
+  # ends. Not a retry: the release is sent once.
+  try(release_execute(con, op, all = TRUE), silent = TRUE)
   list(
     operation_id = op,
     responses = run$responses,
