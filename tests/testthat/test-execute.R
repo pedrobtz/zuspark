@@ -43,6 +43,41 @@ test_that("consumed responses are released along the way and at the end", {
   expect_false(is.null(releases[[length(releases)]]$release_all))
 })
 
+test_that("each inline release names the last response consumed before it", {
+  calls <- local_replay("reattach")
+  con <- replay_connect("reattach")
+  spark_config(con, spark.sql.execution.arrow.maxRecordsPerBatch = 100)
+  spark_collect(spark_sql(con, reattach_sql))
+  spark_disconnect(con)
+
+  # The rule, replayed over the recorded responses: per operation, a
+  # release after every `release_every` responses, naming the last one
+  # consumed, until the result is complete.
+  expected <- character()
+  unreleased <- 0L
+  complete <- FALSE
+  for (n in seq_along(calls$methods)) {
+    method <- calls$methods[[n]]
+    if (method == "ExecutePlan") {
+      unreleased <- 0L
+      complete <- FALSE
+    }
+    if (!method %in% c("ExecutePlan", "ReattachExecute")) next
+    for (r in decode_stream_fixture("reattach", n)) {
+      if (!is.null(r$result_complete)) complete <- TRUE
+      unreleased <- unreleased + 1L
+      if (!complete && unreleased >= release_every) {
+        expected <- c(expected, r$response_id)
+        unreleased <- 0L
+      }
+    }
+  }
+  releases <- calls$requests[calls$methods == "ReleaseExecute"]
+  sent <- unlist(lapply(releases, function(r) r$release_until$response_id))
+  expect_gte(length(expected), 1L)
+  expect_identical(sent, expected)
+})
+
 test_that("a stream that fails before any response is re-sent only when the operation never arrived", {
   local_replay("sql-query")
   con <- replay_connect("sql-query")
@@ -228,5 +263,34 @@ test_that("a response for another operation, or a result without its parts, is a
   con <- replay_connect("sql-query")
   q <- spark_sql(con, sql)
   expect_error(spark_collect(q), class = "zuspark_protocol_error")
+  close_connection(con)
+})
+
+test_that("a reattach after a stream that failed before any response keeps its first response", {
+  # ExecutePlan fails before any response; the operation did arrive, so the
+  # reattach answers with the whole result. Its first response is read to
+  # decide whether the operation exists, and must still be consumed.
+  local_replay("sql-query")
+  con <- replay_connect("sql-query")
+  q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
+  recorded <- read_stream_fixture("sql-query", fixture_calls("sql-query")$stem[[5]])
+  # The reattach answers from the first batch on, so that losing its first
+  # response would lose rows.
+  is_batch <- vapply(decode_stream_fixture("sql-query", 5), function(r) !is.null(r$arrow_batch), logical(1))
+  from_batch <- recorded[seq(which(is_batch)[[1L]], length(recorded))]
+  release <- read_fixture("sql-query", fixture_calls("sql-query")$stem[[6]], "response")
+  sent <- character()
+  con$transport <- function(con, method, bytes, deadline, streaming = FALSE) {
+    sent <<- c(sent, method)
+    switch(method,
+      ExecutePlan = replay_stream(list(grpc_transport_condition())),
+      ReattachExecute = replay_stream(from_batch),
+      ReleaseExecute = release
+    )
+  }
+  df <- spark_collect(q)
+  expect_identical(df$id, as.numeric(0:4))
+  expect_identical(q$rows, 5)
+  expect_identical(sent, c("ExecutePlan", "ReattachExecute", "ReleaseExecute"))
   close_connection(con)
 })

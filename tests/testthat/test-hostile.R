@@ -44,7 +44,7 @@ test_that("a truncated unary answer is a protocol error", {
 })
 
 test_that("byte flips anywhere give a result or a zuspark_error", {
-  set.seed(20261106)
+  withr::local_seed(20261106)
   for (n in c(3L, 5L)) {
     msgs <- stream_messages(n)
     for (m in seq_along(msgs)) {
@@ -75,7 +75,7 @@ test_that("damaged Arrow bytes inside a batch are a protocol error or a zuspark_
   expect_protocol_error(hostile_run(data(function(d) raw(0))), "empty Arrow data")
   expect_protocol_error(hostile_run(data(function(d) as.raw(rep(0xAB, 64)))), "garbage Arrow data")
 
-  set.seed(1106)
+  withr::local_seed(1106)
   for (cut in unique(sort(sample(len - 1L, 20L)))) {
     expect_zuspark_outcome(hostile_run(data(function(d) d[seq_len(cut)])), sprintf("Arrow cut at %d", cut))
   }
