@@ -37,7 +37,10 @@ Stages 0 to 4 done 2026-11-05: the descriptor set pinned at Spark
 `zuspark_info()`, and SQL with reattachable execution: `spark_sql()`,
 `spark_collect()`, `spark_fetch()`, `spark_execute()` (Stage 2), and
 `spark_schema()` (Stage 3), and Spark's errors, `spark_error_details()`,
-interrupts and `spark_interrupt()` (Stage 4). Exact conversion of `int64`, `decimal128`
+interrupts and `spark_interrupt()` (Stage 4). Stage 5, 2026-11-06:
+`spark_connect_databricks()`, checked on a Databricks Free Edition
+workspace (serverless only; classic clusters untested), with findings in
+`.agents/databricks.md`. Exact conversion of `int64`, `decimal128`
 and the time types waits on zuint, decimal and zutempo registering with
 zuarrow (zuint#52, decimal#24, zutempo#94). The
 roadmap in
@@ -83,6 +86,12 @@ ZUSPARK_TEST_REMOTE_CUT=sc://localhost:15003 \
   Rscript -e 'devtools::test(filter = "live")'
 ```
 
+The `databricks` fixture comes from a workspace instead, by
+`tools/record-databricks.R` with `DATABRICKS_HOST` and `DATABRICKS_TOKEN`
+set; it scrubs the workspace's names and fails if one survives. Keep the
+credentials outside the repository (`.zuspark-databricks.env` is ignored
+in case a copy lands here).
+
 Re-record the fixtures when a stage adds an RPC scenario or the request
 shape changes, and commit them with the change.
 
@@ -106,6 +115,8 @@ See `.agents/design.md` for the why; this is the where.
   with reattachable execution: the reattach loop, inline releases every
   16 responses, release-all on completion or abandonment, and the
   per-response checks. [R/sql.R](R/sql.R) builds the user verbs on it.
+- [R/databricks.R](R/databricks.R): `spark_connect_databricks()`, the
+  connection string and compute header Databricks needs.
 - [R/url.R](R/url.R) parses `sc://` strings; [R/session.R](R/session.R)
   holds the connection, an environment of class `zuspark_connection`, so
   the server-side id and the released flag are shared by every copy;

@@ -52,3 +52,6 @@ CRAN-SUBMISSION
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Local Databricks credentials (Stage 5); keep them in ~ instead.
+.zuspark-databricks.env

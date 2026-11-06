@@ -1,0 +1,6 @@
+
+$5f9392c0-cfa5-430a-9154-2d54107b2f7c	
+zusparkG
+ERC
+ASELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)"8zuspark zuspark/0.0.0.9000 spark/4.2.1 os/darwin r/4.5.2*
+2$91d0e7ad-ef4b-414c-be8c-9dac142585b1B$a9fd2ec8-01c1-43c3-a725-72bea53674e5

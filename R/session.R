@@ -53,6 +53,9 @@ spark_connect <- function(url = Sys.getenv("SPARK_REMOTE"), ...,
   user_id <- user_id %||% u$user_id %||% default_user_id()
   session_id <- session_id %||% u$session_id %||% new_uuid()
   check_session_id(session_id)
+  # A classed id, such as zuid's uuid, would never be identical() to the
+  # plain string the server answers with.
+  session_id <- as.character(unclass(session_id))
 
   metadata <- connection_metadata(u, headers)
 
