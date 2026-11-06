@@ -200,24 +200,6 @@ test_that("a session id with attributes, such as zuid's uuid, is kept as a plain
   expect_true(spark_disconnect(con))
 })
 
-test_that("numbers reach the server in full, not in scientific notation", {
-  expect_identical(config_value(100000), "100000")
-  expect_identical(config_value(1e15), "1000000000000000")
-  expect_identical(config_value(0.25), "0.25")
-  expect_identical(config_value(7L), "7")
-  expect_identical(config_value(TRUE), "true")
-  expect_identical(config_value("x"), "x")
-  expect_identical(
-    append_url_params("sc://h", list(grpc_max_message_size = 2e8)),
-    "sc://h/;grpc_max_message_size=200000000"
-  )
-})
-
-test_that("NA and non-finite values are refused as settings and parameters", {
-  for (v in list(NA, NA_real_, NA_character_, Inf, NaN, c(1, 2), list(1))) {
-    expect_error(config_value(v), class = "zuspark_error")
-    expect_error(append_url_params("sc://h", list(x = v)), class = "zuspark_url_error")
-
 test_that("invalid connect arguments are zuspark errors naming the part", {
   local_replay("connect")
   bad <- list(
@@ -250,5 +232,25 @@ test_that("keepalive and message sizes must be finite and positive", {
   for (u in c("sc://h/;grpc_keepalive_time_ms=0", "sc://h/;grpc_keepalive_timeout_ms=0",
               "sc://h/;grpc_max_message_size=1e400", "sc://h/;grpc_max_message_size=0")) {
     expect_error(parse_spark_url(u), class = "zuspark_url_error")
+  }
+})
+
+test_that("numbers reach the server in full, not in scientific notation", {
+  expect_identical(config_value(100000), "100000")
+  expect_identical(config_value(1e15), "1000000000000000")
+  expect_identical(config_value(0.25), "0.25")
+  expect_identical(config_value(7L), "7")
+  expect_identical(config_value(TRUE), "true")
+  expect_identical(config_value("x"), "x")
+  expect_identical(
+    append_url_params("sc://h", list(grpc_max_message_size = 2e8)),
+    "sc://h/;grpc_max_message_size=200000000"
+  )
+})
+
+test_that("NA and non-finite values are refused as settings and parameters", {
+  for (v in list(NA, NA_real_, NA_character_, Inf, NaN, c(1, 2), list(1))) {
+    expect_error(config_value(v), class = "zuspark_error")
+    expect_error(append_url_params("sc://h", list(x = v)), class = "zuspark_url_error")
   }
 })
