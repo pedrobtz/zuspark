@@ -30,7 +30,7 @@ benchmarks.
 | 6 | [Live suite, hostile responses and benchmarks](#stage-6--live-suite-hostile-responses-and-benchmarks) | full | [#8](https://github.com/pedrobtz/zuspark/issues/8) | [#21](https://github.com/pedrobtz/zuspark/pull/21) | 2026-11-06 |
 | 7 | [Documentation](#stage-7--documentation) | quick | [#9](https://github.com/pedrobtz/zuspark/issues/9) | [#22](https://github.com/pedrobtz/zuspark/pull/22) | 2026-11-06 |
 | 8 | [Full CI](#stage-8--full-ci) | full | [#10](https://github.com/pedrobtz/zuspark/issues/10) | [#23](https://github.com/pedrobtz/zuspark/pull/23) | 2026-11-06 |
-| 9 | [v0.1.0 readiness](#stage-9--v010-readiness) | full | [#11](https://github.com/pedrobtz/zuspark/issues/11) | | 2026-11-06 |
+| 9 | [v0.1.0 readiness](#stage-9--v010-readiness) | full | [#11](https://github.com/pedrobtz/zuspark/issues/11) | [#24](https://github.com/pedrobtz/zuspark/pull/24) | 2026-11-06 |
 | 10 | [Review](#stage-10--review) | full | [#12](https://github.com/pedrobtz/zuspark/issues/12) | | |
 
 <!-- markdownlint-enable MD013 -->
