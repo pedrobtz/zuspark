@@ -6,8 +6,11 @@
 #'
 #' `spark_interrupt()` asks the server to stop operations of this session:
 #' every one, or one by its operation id. An R interrupt (Ctrl-C, Esc)
-#' while zuspark waits for a result does this for the running query by
-#' itself, and raises a `zuspark_interrupt_error`.
+#' while zuspark waits for a query's result does this for the running
+#' query by itself, and raises a `zuspark_interrupt_error`. An interrupt
+#' during any other call, such as [spark_schema()] or [spark_config()],
+#' cancels that call and raises a `zuspark_interrupt_error` too, without
+#' asking the server to stop anything.
 #'
 #' @inheritParams spark_disconnect
 #' @param x `NULL` for every operation of the session, an operation id, or
@@ -21,6 +24,9 @@
 spark_interrupt <- function(con, x = NULL) {
   check_open(con)
   if (inherits(x, "zuspark_query")) {
+    if (!identical(x$con, con)) {
+      zuspark_abort("zuspark_error", "`x` is a query of another connection; interrupt it on that one (#35).")
+    }
     x <- x$operation_id
     if (is.null(x)) {
       return(invisible(character()))
@@ -53,14 +59,24 @@ interrupt_rpc <- function(con, operation_id = NULL, deadline = con$deadline) {
 # stream, interrupt the operation on the server, and raise.
 interrupt_execution <- function(con, op, stream) {
   try(stream$cancel(), silent = TRUE)
-  ids <- tryCatch(interrupt_rpc(con, op), error = function(e) character())
+  failure <- NULL
+  ids <- tryCatch(interrupt_rpc(con, op), error = function(e) {
+    failure <<- e
+    character()
+  })
+  what <- if (!is.null(failure)) {
+    # The Interrupt call itself failed: the job may still be running (#55).
+    sprintf("the server could not be asked to stop operation %s (%s)", op, conditionMessage(failure))
+  } else if (length(ids)) {
+    sprintf("the server stopped operation %s", paste(ids, collapse = ", "))
+  } else {
+    "the server stopped no operation (it had finished)"
+  }
   zuspark_abort(
     "zuspark_interrupt_error",
-    sprintf(
-      "Interrupted: the server stopped %s.",
-      if (length(ids)) sprintf("operation %s", paste(ids, collapse = ", ")) else "no operation (it had finished)"
-    ),
+    sprintf("Interrupted: %s.", what),
     interrupted_ids = ids,
-    operation_id = op
+    operation_id = op,
+    interrupt_failure = failure
   )
 }

@@ -114,3 +114,19 @@ test_that("details the server no longer holds are an error, not an empty entry",
   expect_identical(gone$error_id, err$error_id)
   close_connection(con)
 })
+
+test_that("a server without FetchErrorDetails keeps zugrpc's classes on its error", {
+  local_replay("error-details", responses = list(
+    `3` = function(messages) {
+      list(spark_status_condition(error_id = decode_fixture("error-details", 5, "request")$error_id))
+    },
+    `5` = function(bytes) stop(grpc_status_condition("UNIMPLEMENTED", "Method not found"))
+  ))
+  con <- replay_connect("error-details")
+  err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
+  gone <- tryCatch(spark_error_details(err), error = identity)
+  expect_s3_class(gone, "zuspark_rpc_error")
+  expect_s3_class(gone, "zugrpc_error_unimplemented")
+  expect_match(conditionMessage(gone), "predates Spark 4.0", fixed = TRUE)
+  close_connection(con)
+})

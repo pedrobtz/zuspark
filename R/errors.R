@@ -14,7 +14,14 @@ as_zuspark_error <- function(e, con = NULL) {
   }
   info <- e$details$details$ErrorInfo
   status <- e$grpc_status %||% NA_character_
-  if (!is.null(info) && identical(info$domain, "org.apache.spark")) {
+  if (inherits(e, "zugrpc_error_interrupt")) {
+    # An R interrupt during a call that is not a stream read (a schema, a
+    # setting, connecting): the call was cancelled; only a stream read also
+    # asks the server to stop the job (design §7.9, #33).
+    class <- "zuspark_interrupt_error"
+    message <- "Interrupted: the call was cancelled."
+    fields <- list(interrupted_ids = character(), operation_id = NA_character_)
+  } else if (!is.null(info) && identical(info$domain, "org.apache.spark")) {
     meta <- info$metadata %||% character()
     get <- function(key) if (key %in% names(meta)) meta[[key]] else NA_character_
     class <- "zuspark_sql_error"
@@ -96,7 +103,15 @@ spark_error_details <- function(err, con = err$con) {
     ),
     # Spark 3.5 has no FetchErrorDetails (design §7.2).
     zugrpc_error_unimplemented = function(e) {
-      zuspark_abort("zuspark_rpc_error", "This server cannot give error details (it predates Spark 4.0).", parent = e)
+      # The same classes, zugrpc's included, with a message that says why
+      # (#56).
+      stop(errorCondition(
+        "This server cannot give error details (it predates Spark 4.0).",
+        class = setdiff(class(e), c("error", "condition")),
+        call = NULL,
+        grpc_status = e$grpc_status,
+        parent = e
+      ))
     }
   )
   observe_session(con, response)
