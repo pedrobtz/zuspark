@@ -28,6 +28,7 @@
 #' spark_sql(con, "SHOW DATABASES")
 #' spark_disconnect(con)
 spark_sql <- function(con, sql) {
+  con <- unwrap_con(con)
   check_open(con)
   check_sql(sql)
   relation <- NULL
@@ -54,6 +55,7 @@ spark_sql <- function(con, sql) {
 #' @rdname spark_sql
 #' @export
 spark_execute <- function(con, sql) {
+  con <- unwrap_con(con)
   x <- spark_sql(con, sql)
   if (is.data.frame(x)) {
     return(invisible(nrow(x)))

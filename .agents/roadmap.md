@@ -32,6 +32,7 @@ benchmarks.
 | 8 | [Full CI](#stage-8--full-ci) | full | [#10](https://github.com/pedrobtz/zuspark/issues/10) | [#23](https://github.com/pedrobtz/zuspark/pull/23) | 2026-11-06 |
 | 9 | [v0.1.0 readiness](#stage-9--v010-readiness) | full | [#11](https://github.com/pedrobtz/zuspark/issues/11) | [#24](https://github.com/pedrobtz/zuspark/pull/24) | 2026-11-06 |
 | 10 | [Review](#stage-10--review) | full | [#12](https://github.com/pedrobtz/zuspark/issues/12) | [#63](https://github.com/pedrobtz/zuspark/pull/63) [#64](https://github.com/pedrobtz/zuspark/pull/64) [#65](https://github.com/pedrobtz/zuspark/pull/65) [#66](https://github.com/pedrobtz/zuspark/pull/66) [#67](https://github.com/pedrobtz/zuspark/pull/67) [#68](https://github.com/pedrobtz/zuspark/pull/68) [#69](https://github.com/pedrobtz/zuspark/pull/69) [#70](https://github.com/pedrobtz/zuspark/pull/70) [#71](https://github.com/pedrobtz/zuspark/pull/71) [#72](https://github.com/pedrobtz/zuspark/pull/72) [#73](https://github.com/pedrobtz/zuspark/pull/73) [#74](https://github.com/pedrobtz/zuspark/pull/74) [#75](https://github.com/pedrobtz/zuspark/pull/75) [#76](https://github.com/pedrobtz/zuspark/pull/76) [#77](https://github.com/pedrobtz/zuspark/pull/77) [#78](https://github.com/pedrobtz/zuspark/pull/78) | 2026-11-07 |
+| 11 | [DBI and dbplyr](#stage-11--dbi-and-dbplyr) | full | [#88](https://github.com/pedrobtz/zuspark/issues/88) | | 2026-11-07 |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -406,6 +407,36 @@ fixed. No new features. Only submission is left when it closes.
   release commit.
 
 **Design.** [§12](design.md#12-acceptance-criteria-for-v010).
+
+## Stage 11 — DBI and dbplyr
+
+**Issue.** [#88](https://github.com/pedrobtz/zuspark/issues/88), sub-issue of
+[v0.1.0](https://github.com/pedrobtz/zuspark/issues/1).
+
+**CI.** `full — DBI and dbplyr are Suggests whose classes are defined at
+load; the nosuggests leg must show the package works without them.`
+
+**Goal.** A Spark Connect session works through DBI and dbplyr. Added on
+2026-11-07 at the maintainer's request, after the Review stage, because it
+makes 0.1.0 more useful; the Review is re-run on its code.
+
+**Work.**
+
+- `spark_driver()` and the DBI methods (`R/dbi.R`), defined at load when
+  DBI is installed; the `spark_*()` verbs accept the DBI connection.
+- dbplyr's 'Spark SQL' backend registered for the connection.
+- Offline tests over the recorded scenarios, live tests in `live.yaml`,
+  and the documentation (README, Get started, reference).
+
+**Exit criteria.**
+
+- `dbGetQuery()`, `dbSendQuery()` and `dbFetch()` in chunks,
+  `dbWriteTable()` and `dbReadTable()` round-trips, `dbListTables()`,
+  `dbExistsTable()`, `dbRemoveTable()`, and a dbplyr pipeline with
+  `copy_to()` and `collect()` pass against Spark 4.2.1 in `live.yaml`.
+- `R CMD check` is clean on the full profile, `nosuggests` included.
+
+**Design.** [D5](design.md#13-decisions), amended.
 
 ## After 0.1.0
 

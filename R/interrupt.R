@@ -22,6 +22,7 @@
 #' spark_interrupt(con)
 #' spark_disconnect(con)
 spark_interrupt <- function(con, x = NULL) {
+  con <- unwrap_con(con)
   check_open(con)
   if (inherits(x, "zuspark_query")) {
     if (!identical(x$con, con)) {

@@ -24,6 +24,7 @@
 #' do.call(spark_config, c(list(con), as.list(old)))
 #' spark_disconnect(con)
 spark_config <- function(con, ...) {
+  con <- unwrap_con(con)
   check_open(con)
   args <- list(...)
   if (!length(args)) {

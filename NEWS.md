@@ -15,6 +15,13 @@
   Results the server cuts into several streams are reattached, every row
   arriving once, and consumed results are released as they are read.
 
+* `spark_driver()` makes a Spark Connect session a DBI connection, with
+  `DBI::dbConnect(spark_driver(), url)`, so that `dbGetQuery()`,
+  `dbListTables()`, `dbWriteTable()` and the rest work, and dbplyr
+  translates `dplyr` pipelines to Spark SQL with its own Spark backend:
+  `tbl()`, `collect()`, `copy_to()` and `compute()`. DBI, dbplyr and
+  dplyr are optional.
+
 * `spark_schema()` gives a query's schema, as Spark's types, without
   running it.
 
