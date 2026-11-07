@@ -78,9 +78,11 @@ closes the channel.</p>
 defaults to the <code>SPARK_REMOTE</code> environment variable. The default port
 is 15002. The reserved parameters are <code>token</code> (a bearer token; it
 turns TLS on, except to <code>localhost</code> without <code>use_ssl</code>), <code>use_ssl</code>,
-<code>user_id</code>, <code>user_agent</code>, <code>session_id</code>, <code>grpc_max_message_size</code> and
-<code>grpc_keepalive_enabled</code>, <code>_time_ms</code> and <code>_timeout_ms</code>. Every other
-parameter is sent as a header on every call.</p></dd>
+<code>user_id</code>, <code>user_agent</code>, <code>session_id</code>, <code>grpc_max_message_size</code>,
+<code>grpc_keepalive_enabled</code>, <code>grpc_keepalive_time_ms</code>,
+<code>grpc_keepalive_timeout_ms</code> and <code>grpc_keepalive_without_calls</code>
+(accepted and ignored, as PySpark does). Every other parameter is sent
+as a header on every call.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -128,7 +130,7 @@ session was already released.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">spark_connect</span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">con</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> &lt;zuspark_connection&gt; sc://127.0.0.1:15002 (Spark 4.2.1)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   session: 1ad47b2a-31fb-4db9-a3f7-c79baa188d77</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   session: 424ff69d-d787-48db-936c-36314b795e16</span>
 <span class="r-in"><span><span class="fu">spark_disconnect</span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>

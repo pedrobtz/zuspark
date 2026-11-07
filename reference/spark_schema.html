@@ -79,7 +79,8 @@ is the server's mapping of these types, is the schema of
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="spark_connect.html">spark_connect</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">spark_schema</span><span class="op">(</span><span class="fu"><a href="spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT id, CAST(id AS DECIMAL(10, 2)) AS d FROM range(3)"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fu"><a href="spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT id, CAST(id AS DECIMAL(10, 2)) AS d FROM range(3)"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">spark_schema</span><span class="op">(</span><span class="va">q</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   name          type nullable</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1   id        bigint    FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2    d decimal(10,2)     TRUE</span>

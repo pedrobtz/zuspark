@@ -30,9 +30,11 @@ spark_disconnect(con, allow_reconnect = FALSE)
   the `SPARK_REMOTE` environment variable. The default port is 15002.
   The reserved parameters are `token` (a bearer token; it turns TLS on,
   except to `localhost` without `use_ssl`), `use_ssl`, `user_id`,
-  `user_agent`, `session_id`, `grpc_max_message_size` and
-  `grpc_keepalive_enabled`, `_time_ms` and `_timeout_ms`. Every other
-  parameter is sent as a header on every call.
+  `user_agent`, `session_id`, `grpc_max_message_size`,
+  `grpc_keepalive_enabled`, `grpc_keepalive_time_ms`,
+  `grpc_keepalive_timeout_ms` and `grpc_keepalive_without_calls`
+  (accepted and ignored, as PySpark does). Every other parameter is sent
+  as a header on every call.
 
 - ...:
 
@@ -76,6 +78,6 @@ released.
 con <- spark_connect()
 con
 #> <zuspark_connection> sc://127.0.0.1:15002 (Spark 4.2.1)
-#>   session: 1ad47b2a-31fb-4db9-a3f7-c79baa188d77
+#>   session: 424ff69d-d787-48db-936c-36314b795e16
 spark_disconnect(con)
 ```

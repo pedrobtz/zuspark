@@ -38,7 +38,10 @@ longer holds the details, `spark_error_details()` raises a
 
 ``` r
 con <- spark_connect()
-err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
+err <- tryCatch(
+  spark_sql(con, "SELECT * FROM no_such_table"),
+  error = identity
+)
 err$error_class
 #> [1] "TABLE_OR_VIEW_NOT_FOUND"
 details <- spark_error_details(err)

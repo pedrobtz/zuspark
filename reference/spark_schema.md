@@ -29,7 +29,8 @@ A data frame with one row per column: `name`, `type` and `nullable`.
 
 ``` r
 con <- spark_connect()
-spark_schema(spark_sql(con, "SELECT id, CAST(id AS DECIMAL(10, 2)) AS d FROM range(3)"))
+q <- spark_sql(con, "SELECT id, CAST(id AS DECIMAL(10, 2)) AS d FROM range(3)")
+spark_schema(q)
 #>   name          type nullable
 #> 1   id        bigint    FALSE
 #> 2    d decimal(10,2)     TRUE
