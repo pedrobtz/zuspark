@@ -52,7 +52,7 @@ con <- spark_connect()
 q <- spark_sql(con, "SELECT id, id % 7 AS weekday, rand(42) AS amount FROM range(1000000)")
 system.time(df <- spark_collect(q))
 #>    user  system elapsed 
-#>   0.210   0.036   0.671
+#>   0.285   0.060   0.890
 nrow(df)
 #> [1] 1000000
 q
