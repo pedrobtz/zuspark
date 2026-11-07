@@ -31,11 +31,12 @@ spark_sql <- function(con, sql) {
   check_open(con)
   check_sql(sql)
   relation <- NULL
-  execute_plan(con, sql_command_plan(sql), function(response) {
+  keep_relation <- function(response) {
     if (!is.null(response$sql_command_result)) {
       relation <<- response$sql_command_result$relation
     }
-  })
+  }
+  execute_plan(con, sql_command_plan(sql), on_response = keep_relation)
   if (is.null(relation)) {
     zuspark_abort(
       "zuspark_protocol_error",
@@ -58,11 +59,12 @@ spark_execute <- function(con, sql) {
     return(invisible(nrow(x)))
   }
   rows <- 0
-  execute_plan(con, list(root = x$relation), function(response) {
+  count_rows <- function(response) {
     if (!is.null(response$arrow_batch)) {
-      rows <<- rows + response$arrow_batch$row_count
+      rows <<- rows + (response$arrow_batch$row_count %||% 0)
     }
-  })
+  }
+  execute_plan(con, list(root = x$relation), on_response = count_rows)
   invisible(rows)
 }
 
@@ -168,9 +170,10 @@ fetch_batches <- function(x) {
   batches <- vector("list", 16L)
   n <- 0L
   rows <- 0
-  run <- execute_plan(x$con, list(root = x$relation), on_operation = function(op) {
+  keep_operation <- function(op) {
     x$operation_id <- op
-  }, on_response = function(response) {
+  }
+  keep_batch <- function(response) {
     batch <- response$arrow_batch
     if (is.null(batch)) {
       return()
@@ -186,7 +189,11 @@ fetch_batches <- function(x) {
     n <<- n + 1L
     if (n > length(batches)) length(batches) <<- 2L * length(batches)
     batches[[n]] <<- batch$data %||% raw()
-  })
+  }
+  run <- execute_plan(
+    x$con, list(root = x$relation),
+    on_response = keep_batch, on_operation = keep_operation
+  )
   x$rows <- rows
   x$metrics <- run$metrics
   x$observed_metrics <- run$observed_metrics

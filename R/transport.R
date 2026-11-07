@@ -2,9 +2,9 @@
 # (server-streaming): encode with zuproto, send through the transport,
 # decode the answer. The transport is a function
 # (con, method, bytes, deadline, streaming) returning, for a unary call, the
-# response message's bytes and, for a streaming one, a list of `next`
-# (a function returning the next message's bytes, or NULL at the end) and
-# `cancel`. It is normally zugrpc on the connection's channel. Tests replace
+# response message's bytes and, for a streaming one, a list of
+# `next_message` (a function returning the next message's bytes, or NULL at
+# the end) and `cancel`. It is normally zugrpc on the connection's channel. Tests replace
 # it through the internal option `zuspark.transport` with a fake channel
 # that replays recorded bytes (design §9); tools/record-fixtures.R records
 # them by setting `zuspark.record` to a directory.
@@ -22,8 +22,8 @@ spark_rpc <- function(con, method, request, request_type, response_type,
   decode_response(response, response_type)
 }
 
-# A server-streaming call: returns a list of `next`, which returns the next
-# decoded response or NULL at the end, and `cancel`.
+# A server-streaming call: returns a list of `next_response`, which returns
+# the next decoded response or NULL at the end, and `cancel`.
 spark_stream <- function(con, method, request, request_type, response_type,
                          deadline = NULL) {
   bytes <- zuproto::proto_encode(request, request_type, spark_pool())

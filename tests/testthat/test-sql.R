@@ -147,3 +147,18 @@ test_that("the encoded plans are stable", {
     cat(zuproto::proto_to_json(bytes, "spark.connect.Plan", spark_pool()), "\n")
   })
 })
+
+test_that("spark_execute() counts a batch without row_count as no rows", {
+  local_replay("sql-query", responses = list(`5` = function(messages) {
+    for (i in seq_along(messages)) {
+      messages <- edit_response(messages, i, function(x) {
+        if (!is.null(x$arrow_batch)) x$arrow_batch$row_count <- NULL
+        x
+      })
+    }
+    messages
+  }))
+  con <- replay_connect("sql-query")
+  expect_identical(spark_execute(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)"), 0)
+  close_connection(con)
+})
