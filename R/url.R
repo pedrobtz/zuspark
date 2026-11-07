@@ -6,10 +6,16 @@
 # every call (D12).
 
 spark_url_reserved <- c(
-  "token", "use_ssl", "user_id", "user_agent", "session_id",
+  "token",
+  "use_ssl",
+  "user_id",
+  "user_agent",
+  "session_id",
   "grpc_max_message_size",
-  "grpc_keepalive_enabled", "grpc_keepalive_time_ms",
-  "grpc_keepalive_timeout_ms", "grpc_keepalive_without_calls"
+  "grpc_keepalive_enabled",
+  "grpc_keepalive_time_ms",
+  "grpc_keepalive_timeout_ms",
+  "grpc_keepalive_without_calls"
 )
 
 # PySpark's wording, kept word for word (design §7.1): its four
@@ -103,10 +109,15 @@ parse_url_params <- function(text) {
 # token changed that way would still be sent, so both are refused.
 url_decode <- function(key, value) {
   escapes <- regmatches(value, gregexpr("%.{0,2}", value))[[1L]]
-  if (any(!grepl("^%[0-9A-Fa-f]{2}$", escapes)) || any(tolower(escapes) == "%00")) {
+  if (
+    any(!grepl("^%[0-9A-Fa-f]{2}$", escapes)) || any(tolower(escapes) == "%00")
+  ) {
     url_abort(
       "parameter",
-      sprintf("Parameter '%s' has an invalid percent-escape; write '%%' as '%%25'.", key)
+      sprintf(
+        "Parameter '%s' has an invalid percent-escape; write '%%' as '%%25'.",
+        key
+      )
     )
   }
   utils::URLdecode(value)
@@ -119,8 +130,16 @@ parse_authority <- function(authority, url) {
   port <- NULL
   if (startsWith(authority, "[")) {
     close_bracket <- regexpr("]", authority, fixed = TRUE)
-    host <- if (close_bracket > 0L) substr(authority, 2L, close_bracket - 1L) else ""
-    port_text <- if (close_bracket > 0L) substr(authority, close_bracket + 1L, nchar(authority)) else ""
+    host <- if (close_bracket > 0L) {
+      substr(authority, 2L, close_bracket - 1L)
+    } else {
+      ""
+    }
+    port_text <- if (close_bracket > 0L) {
+      substr(authority, close_bracket + 1L, nchar(authority))
+    } else {
+      ""
+    }
     if (startsWith(port_text, ":")) {
       port <- substr(port_text, 2L, nchar(port_text))
     }
@@ -136,7 +155,11 @@ parse_authority <- function(authority, url) {
   if (!nzchar(host)) {
     url_abort(
       "host",
-      sprintf("Hostname is missing in the URL: '%s'. %s", redact_url(url), spark_url_hint)
+      sprintf(
+        "Hostname is missing in the URL: '%s'. %s",
+        redact_url(url),
+        spark_url_hint
+      )
     )
   }
   host <- tolower(host)
@@ -149,7 +172,11 @@ parse_authority <- function(authority, url) {
   } else if (!grepl("^[0-9]+$", port) || as.numeric(port) > 65535) {
     url_abort(
       "port",
-      sprintf("The port '%s' is not a number from 0 to 65535. %s", port, spark_url_hint)
+      sprintf(
+        "The port '%s' is not a number from 0 to 65535. %s",
+        port,
+        spark_url_hint
+      )
     )
   } else {
     port <- as.integer(port)
@@ -166,7 +193,10 @@ spark_url_settings <- function(host, port, params) {
     if (nzchar(env)) token <- env
   }
   if (!is.null(token) && !nzchar(token)) {
-    url_abort("token", "Parameter 'token' is empty: give a token, or leave the parameter out.")
+    url_abort(
+      "token",
+      "Parameter 'token' is empty: give a token, or leave the parameter out."
+    )
   }
   use_ssl <- identical(tolower(get("use_ssl") %||% ""), "true")
   # PySpark: a token makes the channel secure, but to localhost without
@@ -211,7 +241,11 @@ url_number <- function(params, key, default) {
   if (is.na(value) || !is.finite(value) || value <= 0) {
     url_abort(
       "parameter",
-      sprintf("Parameter '%s' must be a positive number, not '%s'.", key, params[[key]])
+      sprintf(
+        "Parameter '%s' must be a positive number, not '%s'.",
+        key,
+        params[[key]]
+      )
     )
   }
   value
@@ -223,7 +257,10 @@ check_session_id <- function(session_id) {
   if (!is_string(session_id) || !grepl(uuid_pattern, session_id)) {
     url_abort(
       "session_id",
-      sprintf("Parameter 'session_id' must be a UUID, not '%s'.", format(session_id))
+      sprintf(
+        "Parameter 'session_id' must be a UUID, not '%s'.",
+        format(session_id)
+      )
     )
   }
   invisible(session_id)
@@ -242,7 +279,8 @@ redact_url <- function(url) {
   }
   params <- parts[-1L]
   keys <- sub("=.*$", "", params)
-  secret <- grepl("=", params, fixed = TRUE) & !keys %in% setdiff(spark_url_reserved, "token")
+  secret <- grepl("=", params, fixed = TRUE) &
+    !keys %in% setdiff(spark_url_reserved, "token")
   params[secret] <- paste0(keys[secret], "=<redacted>")
   paste(c(parts[[1L]], params), collapse = ";")
 }

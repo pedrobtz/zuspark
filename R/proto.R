@@ -12,7 +12,12 @@ spark_pool <- function() {
 }
 
 spark_descriptor_path <- function() {
-  system.file("proto", "spark-connect.binpb", package = "zuspark", mustWork = TRUE)
+  system.file(
+    "proto",
+    "spark-connect.binpb",
+    package = "zuspark",
+    mustWork = TRUE
+  )
 }
 
 # inst/proto/VERSION as a named character vector: spark, googleapis, protoc

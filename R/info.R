@@ -28,6 +28,10 @@ print.zuspark_info <- function(x, ...) {
   cat(sprintf("zuspark %s, Spark Connect protocol %s\n", x$version, x$spark))
   cat(sprintf("  descriptors: %s\n", substr(x$descriptors, 1L, 16L)))
   cat(sprintf("  zuproto:     %s\n", x$zuproto))
-  cat(sprintf("  zugrpc:      %s on zuhttp %s\n", x$zugrpc$version, x$zugrpc$zuhttp))
+  cat(sprintf(
+    "  zugrpc:      %s on zuhttp %s\n",
+    x$zugrpc$version,
+    x$zugrpc$zuhttp
+  ))
   invisible(x)
 }

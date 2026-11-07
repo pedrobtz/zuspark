@@ -25,7 +25,10 @@ spark_interrupt <- function(con, x = NULL) {
   check_open(con)
   if (inherits(x, "zuspark_query")) {
     if (!identical(x$con, con)) {
-      zuspark_abort("zuspark_error", "`x` is a query of another connection; interrupt it on that one (#35).")
+      zuspark_abort(
+        "zuspark_error",
+        "`x` is a query of another connection; interrupt it on that one (#35)."
+      )
     }
     x <- x$operation_id
     if (is.null(x)) {
@@ -33,7 +36,10 @@ spark_interrupt <- function(con, x = NULL) {
     }
   }
   if (!is.null(x) && !is_string(x, empty_ok = TRUE)) {
-    zuspark_abort("zuspark_error", "`x` must be NULL, an operation id or a query.")
+    zuspark_abort(
+      "zuspark_error",
+      "`x` must be NULL, an operation id or a query."
+    )
   }
   invisible(interrupt_rpc(con, x))
 }
@@ -47,8 +53,11 @@ interrupt_rpc <- function(con, operation_id = NULL, deadline = con$deadline) {
     request$operation_id <- operation_id
   }
   response <- spark_rpc(
-    con, "Interrupt", request,
-    "spark.connect.InterruptRequest", "spark.connect.InterruptResponse",
+    con,
+    "Interrupt",
+    request,
+    "spark.connect.InterruptRequest",
+    "spark.connect.InterruptResponse",
     deadline = deadline
   )
   observe_session(con, response)
@@ -66,7 +75,11 @@ interrupt_execution <- function(con, op, stream) {
   })
   what <- if (!is.null(failure)) {
     # The Interrupt call itself failed: the job may still be running (#55).
-    sprintf("the server could not be asked to stop operation %s (%s)", op, conditionMessage(failure))
+    sprintf(
+      "the server could not be asked to stop operation %s (%s)",
+      op,
+      conditionMessage(failure)
+    )
   } else if (length(ids)) {
     sprintf("the server stopped operation %s", paste(ids, collapse = ", "))
   } else {

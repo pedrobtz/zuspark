@@ -39,10 +39,15 @@
 #' con <- spark_connect()
 #' con
 #' spark_disconnect(con)
-spark_connect <- function(url = Sys.getenv("SPARK_REMOTE"), ...,
-                          user_id = NULL, session_id = NULL,
-                          user_agent = NULL, headers = NULL,
-                          deadline = NULL) {
+spark_connect <- function(
+  url = Sys.getenv("SPARK_REMOTE"),
+  ...,
+  user_id = NULL,
+  session_id = NULL,
+  user_agent = NULL,
+  headers = NULL,
+  deadline = NULL
+) {
   if (!is_string(url)) {
     url_abort(
       "url",
@@ -98,7 +103,9 @@ spark_connect <- function(url = Sys.getenv("SPARK_REMOTE"), ...,
     error = function(e) {
       # Config made the session on the server: release it rather than
       # leave it until the server's idle timeout (#37).
-      if (opened) try(release_session(con, deadline = 5), silent = TRUE)
+      if (opened) {
+        try(release_session(con, deadline = 5), silent = TRUE)
+      }
       close_connection(con)
       stop(e)
     }
@@ -115,7 +122,11 @@ spark_connect <- function(url = Sys.getenv("SPARK_REMOTE"), ...,
 #' @export
 spark_disconnect <- function(con, allow_reconnect = FALSE) {
   check_connection(con)
-  if (!is.logical(allow_reconnect) || length(allow_reconnect) != 1L || is.na(allow_reconnect)) {
+  if (
+    !is.logical(allow_reconnect) ||
+      length(allow_reconnect) != 1L ||
+      is.na(allow_reconnect)
+  ) {
     zuspark_abort("zuspark_error", "`allow_reconnect` must be TRUE or FALSE.")
   }
   if (isTRUE(con$released)) {
@@ -152,7 +163,10 @@ spark_version <- function(con) {
 #' @export
 spark_session_id <- function(con) {
   check_connection(con)
-  c(client = con$session_id, server = con$server_side_session_id %||% NA_character_)
+  c(
+    client = con$session_id,
+    server = con$server_side_session_id %||% NA_character_
+  )
 }
 
 #' @export
@@ -190,7 +204,11 @@ observe_session <- function(con, response) {
   if (!is.null(sid) && nzchar(sid) && !identical(sid, con$session_id)) {
     zuspark_abort(
       "zuspark_session_error",
-      sprintf("The server answered for session %s, not %s.", sid, con$session_id)
+      sprintf(
+        "The server answered for session %s, not %s.",
+        sid,
+        con$session_id
+      )
     )
   }
   server <- response$server_side_session_id
@@ -204,7 +222,8 @@ observe_session <- function(con, response) {
       "zuspark_session_error",
       sprintf(
         "The server-side session changed from %s to %s: the server lost this session. Reconnect with `spark_connect()`.",
-        con$server_side_session_id, server
+        con$server_side_session_id,
+        server
       )
     )
   }
@@ -214,8 +233,11 @@ observe_session <- function(con, response) {
 version_rpc <- function(con) {
   request <- c(session_fields(con), list(spark_version = list()))
   response <- spark_rpc(
-    con, "AnalyzePlan", request,
-    "spark.connect.AnalyzePlanRequest", "spark.connect.AnalyzePlanResponse"
+    con,
+    "AnalyzePlan",
+    request,
+    "spark.connect.AnalyzePlanRequest",
+    "spark.connect.AnalyzePlanResponse"
   )
   observe_session(con, response)
   response$spark_version$version %||% ""
@@ -239,13 +261,23 @@ check_server_version <- function(con) {
   invisible()
 }
 
-release_session <- function(con, allow_reconnect = FALSE, deadline = con$deadline) {
-  request <- c(session_fields(con, observed = FALSE), list(allow_reconnect = allow_reconnect))
+release_session <- function(
+  con,
+  allow_reconnect = FALSE,
+  deadline = con$deadline
+) {
+  request <- c(
+    session_fields(con, observed = FALSE),
+    list(allow_reconnect = allow_reconnect)
+  )
   tryCatch(
     {
       response <- spark_rpc(
-        con, "ReleaseSession", request,
-        "spark.connect.ReleaseSessionRequest", "spark.connect.ReleaseSessionResponse",
+        con,
+        "ReleaseSession",
+        request,
+        "spark.connect.ReleaseSessionRequest",
+        "spark.connect.ReleaseSessionResponse",
         deadline = deadline
       )
       observe_session(con, response)
@@ -361,16 +393,32 @@ append_url_params <- function(url, params) {
   }
   keys <- names(params)
   if (is.null(keys) || any(!nzchar(keys))) {
-    url_abort("parameter", "Parameters in `...` must be named, such as `token = \"...\"`.")
+    url_abort(
+      "parameter",
+      "Parameters in `...` must be named, such as `token = \"...\"`."
+    )
   }
-  values <- vapply(params, function(v) {
-    text <- scalar_text(v)
-    if (is.null(text)) {
-      url_abort("parameter", "Each parameter in `...` must be a single string, number or logical.")
-    }
-    text
-  }, character(1))
-  params_tail <- paste0(";", keys, "=", vapply(values, utils::URLencode, "", reserved = TRUE), collapse = "")
+  values <- vapply(
+    params,
+    function(v) {
+      text <- scalar_text(v)
+      if (is.null(text)) {
+        url_abort(
+          "parameter",
+          "Each parameter in `...` must be a single string, number or logical."
+        )
+      }
+      text
+    },
+    character(1)
+  )
+  params_tail <- paste0(
+    ";",
+    keys,
+    "=",
+    vapply(values, utils::URLencode, "", reserved = TRUE),
+    collapse = ""
+  )
   # Parameters follow the path's ';'; a URL without a path gets "/".
   authority_end <- regexpr("/", substr(url, 6L, nchar(url)), fixed = TRUE)
   if (authority_end < 0L) {
@@ -412,7 +460,10 @@ check_header_text <- function(headers) {
 # NULL, or a single non-empty string.
 check_text_arg <- function(x, name) {
   if (!is.null(x) && !is_string(x)) {
-    url_abort(name, sprintf("`%s` must be NULL or a single non-empty string.", name))
+    url_abort(
+      name,
+      sprintf("`%s` must be NULL or a single non-empty string.", name)
+    )
   }
   invisible(x)
 }
@@ -420,10 +471,18 @@ check_text_arg <- function(x, name) {
 # NULL, a positive number of seconds, or a date-time to stop at.
 check_deadline <- function(deadline) {
   ok <- is.null(deadline) ||
-    (length(deadline) == 1L && inherits(deadline, "POSIXct") && !is.na(deadline)) ||
-    (is.numeric(deadline) && length(deadline) == 1L && !is.na(deadline) && deadline > 0)
+    (length(deadline) == 1L &&
+      inherits(deadline, "POSIXct") &&
+      !is.na(deadline)) ||
+    (is.numeric(deadline) &&
+      length(deadline) == 1L &&
+      !is.na(deadline) &&
+      deadline > 0)
   if (!ok) {
-    url_abort("deadline", "`deadline` must be NULL, a positive number of seconds, or a date-time.")
+    url_abort(
+      "deadline",
+      "`deadline` must be NULL, a positive number of seconds, or a date-time."
+    )
   }
   invisible(deadline)
 }
@@ -435,8 +494,15 @@ check_headers <- function(headers) {
   if (is.list(headers)) {
     headers <- unlist(headers)
   }
-  if (!is.character(headers) || is.null(names(headers)) || any(!nzchar(names(headers)))) {
-    zuspark_abort("zuspark_error", "`headers` must be a named character vector.")
+  if (
+    !is.character(headers) ||
+      is.null(names(headers)) ||
+      any(!nzchar(names(headers)))
+  ) {
+    zuspark_abort(
+      "zuspark_error",
+      "`headers` must be a named character vector."
+    )
   }
   headers
 }

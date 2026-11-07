@@ -13,18 +13,32 @@ release_every <- 16L
 # is skipped and counted, so that a newer server's messages do not break a
 # result.
 known_responses <- c(
-  "arrow_batch", "sql_command_result", "result_complete", "schema",
-  "metrics", "observed_metrics", "execution_progress"
+  "arrow_batch",
+  "sql_command_result",
+  "result_complete",
+  "schema",
+  "metrics",
+  "observed_metrics",
+  "execution_progress"
 )
-response_header_fields <- c("session_id", "server_side_session_id", "operation_id", "response_id")
+response_header_fields <- c(
+  "session_id",
+  "server_side_session_id",
+  "operation_id",
+  "response_id"
+)
 
 # Runs `plan` and calls `on_response(response)` for each response that
 # carries an `arrow_batch` or a `sql_command_result`; the schema, metrics
 # and progress responses are kept on the returned list instead. Returns a list of `operation_id`,
 # `responses` (how many), `reattaches`, `skipped` (responses of unknown
 # types), `schema`, `metrics` and `observed_metrics`.
-execute_plan <- function(con, plan, on_response = function(response) NULL,
-                         on_operation = function(op) NULL) {
+execute_plan <- function(
+  con,
+  plan,
+  on_response = function(response) NULL,
+  on_operation = function(op) NULL
+) {
   check_open(con)
   op <- new_operation_id()
   on_operation(op)
@@ -46,7 +60,9 @@ execute_plan <- function(con, plan, on_response = function(response) NULL,
   run$stream <- NULL
   on.exit(
     if (!run$complete) {
-      if (!is.null(run$stream)) try(run$stream$cancel(), silent = TRUE)
+      if (!is.null(run$stream)) {
+        try(run$stream$cancel(), silent = TRUE)
+      }
       try(release_execute(con, op, all = TRUE), silent = TRUE)
     },
     add = TRUE
@@ -105,8 +121,11 @@ new_operation_id <- function() {
 
 open_execute <- function(con, request) {
   spark_stream(
-    con, "ExecutePlan", request,
-    "spark.connect.ExecutePlanRequest", "spark.connect.ExecutePlanResponse"
+    con,
+    "ExecutePlan",
+    request,
+    "spark.connect.ExecutePlanRequest",
+    "spark.connect.ExecutePlanResponse"
   )
 }
 
@@ -130,10 +149,17 @@ read_execute_stream <- function(con, op, stream, run, on_response) {
       return(NULL)
     }
     observe_session(con, response)
-    if (nzchar(response$operation_id %||% "") && !identical(response$operation_id, op)) {
+    if (
+      nzchar(response$operation_id %||% "") &&
+        !identical(response$operation_id, op)
+    ) {
       zuspark_abort(
         "zuspark_protocol_error",
-        sprintf("A response for operation %s arrived on operation %s.", response$operation_id, op),
+        sprintf(
+          "A response for operation %s arrived on operation %s.",
+          response$operation_id,
+          op
+        ),
         operation_id = op
       )
     }
@@ -144,8 +170,12 @@ read_execute_stream <- function(con, op, stream, run, on_response) {
     }
 
     members <- setdiff(names(response), response_header_fields)
-    if (!is.null(response$schema)) run$schema <- response$schema
-    if (!is.null(response$metrics)) run$metrics <- response$metrics
+    if (!is.null(response$schema)) {
+      run$schema <- response$schema
+    }
+    if (!is.null(response$metrics)) {
+      run$metrics <- response$metrics
+    }
     if (length(response$observed_metrics)) {
       run$observed_metrics <- c(run$observed_metrics, response$observed_metrics)
     }
@@ -161,7 +191,11 @@ read_execute_stream <- function(con, op, stream, run, on_response) {
     }
 
     run$unreleased <- run$unreleased + 1L
-    if (!run$complete && run$unreleased >= release_every && !is.null(run$last_response_id)) {
+    if (
+      !run$complete &&
+        run$unreleased >= release_every &&
+        !is.null(run$last_response_id)
+    ) {
       # Best effort, as the other releases: a read-only query whose release
       # fails still has its rows; the next release, or the last, frees what
       # this one did not (#32).
@@ -181,8 +215,11 @@ reattach_execute <- function(con, op, run, request) {
     fields$last_response_id <- run$last_response_id
   }
   stream <- spark_stream(
-    con, "ReattachExecute", fields,
-    "spark.connect.ReattachExecuteRequest", "spark.connect.ExecutePlanResponse"
+    con,
+    "ReattachExecute",
+    fields,
+    "spark.connect.ReattachExecuteRequest",
+    "spark.connect.ExecutePlanResponse"
   )
   if (run$responses > 0L) {
     return(stream)
@@ -228,7 +265,9 @@ pushed_back <- function(first, stream) {
       if (length(pending)) {
         r <- pending[[1L]]
         pending <<- list()
-        if (inherits(r, "condition")) stop(r)
+        if (inherits(r, "condition")) {
+          stop(r)
+        }
         return(r)
       }
       stream$next_response()
@@ -240,7 +279,9 @@ pushed_back <- function(first, stream) {
 # A release whose call fails is dropped: the rows it covers are already
 # read. A session error still propagates: the server lost the session.
 release_best_effort <- function(con, op, ...) {
-  tryCatch(release_execute(con, op, ...), zuspark_rpc_error = function(e) invisible())
+  tryCatch(release_execute(con, op, ...), zuspark_rpc_error = function(e) {
+    invisible()
+  })
 }
 
 release_execute <- function(con, op, all = FALSE, until = NULL) {
@@ -251,8 +292,11 @@ release_execute <- function(con, op, all = FALSE, until = NULL) {
     request$release_until <- list(response_id = until)
   }
   response <- spark_rpc(
-    con, "ReleaseExecute", request,
-    "spark.connect.ReleaseExecuteRequest", "spark.connect.ReleaseExecuteResponse"
+    con,
+    "ReleaseExecute",
+    request,
+    "spark.connect.ReleaseExecuteRequest",
+    "spark.connect.ReleaseExecuteResponse"
   )
   observe_session(con, response)
   invisible()

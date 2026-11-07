@@ -34,7 +34,10 @@ spark_config <- function(con, ...) {
   if (is.null(keys) || all(!nzchar(keys))) {
     keys <- unlist(args, use.names = FALSE)
     if (!is.character(keys) || anyNA(keys) || any(!nzchar(keys))) {
-      zuspark_abort("zuspark_error", "Settings to read must be non-empty strings.")
+      zuspark_abort(
+        "zuspark_error",
+        "Settings to read must be non-empty strings."
+      )
     }
     return(config_rpc(con, list(get_option = list(keys = keys))))
   }
@@ -45,12 +48,20 @@ spark_config <- function(con, ...) {
     )
   }
 
-  unset <- vapply(args, function(v) is.null(v) || (length(v) == 1L && is.na(v)), logical(1))
+  unset <- vapply(
+    args,
+    function(v) is.null(v) || (length(v) == 1L && is.na(v)),
+    logical(1)
+  )
   values <- vapply(args[!unset], config_value, character(1))
 
   old <- config_rpc(con, list(get_option = list(keys = keys)))
   if (length(values)) {
-    pairs <- Map(function(k, v) list(key = k, value = v), names(values), unname(values))
+    pairs <- Map(
+      function(k, v) list(key = k, value = v),
+      names(values),
+      unname(values)
+    )
     config_rpc(con, list(set = list(pairs = unname(pairs))))
   }
   if (any(unset)) {
@@ -62,7 +73,10 @@ spark_config <- function(con, ...) {
 config_value <- function(v) {
   text <- scalar_text(v)
   if (is.null(text)) {
-    zuspark_abort("zuspark_error", "Each setting's value must be a single string, number or logical.")
+    zuspark_abort(
+      "zuspark_error",
+      "Each setting's value must be a single string, number or logical."
+    )
   }
   text
 }
@@ -70,8 +84,11 @@ config_value <- function(v) {
 config_rpc <- function(con, operation) {
   request <- c(session_fields(con), list(operation = operation))
   response <- spark_rpc(
-    con, "Config", request,
-    "spark.connect.ConfigRequest", "spark.connect.ConfigResponse"
+    con,
+    "Config",
+    request,
+    "spark.connect.ConfigRequest",
+    "spark.connect.ConfigResponse"
   )
   observe_session(con, response)
   for (w in response$warnings) {
@@ -86,7 +103,10 @@ config_pairs <- function(response) {
   pairs <- response$pairs
   keys <- vapply(pairs, function(p) p$key %||% NA_character_, character(1))
   if (anyNA(keys)) {
-    zuspark_abort("zuspark_protocol_error", "The server sent a setting without a name.")
+    zuspark_abort(
+      "zuspark_protocol_error",
+      "The server sent a setting without a name."
+    )
   }
   values <- vapply(pairs, function(p) p$value %||% NA_character_, character(1))
   stats::setNames(values, keys)
