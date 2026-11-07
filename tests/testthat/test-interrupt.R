@@ -75,3 +75,57 @@ test_that("spark_interrupt() interrupts everything, one id, or a query's last ru
   expect_error(spark_interrupt(con, 1), class = "zuspark_error")
   close_connection(con)
 })
+
+test_that("an interrupt during a unary call is a zuspark_interrupt_error", {
+  local_replay("schema")
+  con <- replay_connect("schema")
+  q <- spark_sql(con, schema_sql)
+  sent <- character()
+  con$transport <- function(con, method, bytes, deadline, streaming = FALSE) {
+    sent <<- c(sent, method)
+    stop(structure(
+      class = c("zugrpc_error_interrupt", "zugrpc_error", "error", "condition"),
+      list(message = "interrupted", call = NULL)
+    ))
+  }
+  err <- tryCatch(spark_schema(q), error = identity)
+  expect_s3_class(err, "zuspark_interrupt_error")
+  expect_s3_class(err, "zugrpc_error_interrupt")
+  # A unary call is only cancelled: no Interrupt is sent.
+  expect_identical(sent, "AnalyzePlan")
+  close_connection(con)
+})
+
+test_that("a failed Interrupt call is told apart from a finished operation", {
+  local_replay("sql-query")
+  con <- replay_connect("sql-query")
+  q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
+  release <- read_fixture("sql-query", fixture_calls("sql-query")$stem[[6]], "response")
+  con$transport <- function(con, method, bytes, deadline, streaming = FALSE) {
+    switch(method,
+      ExecutePlan = replay_stream(list(structure(
+        class = c("zugrpc_error_interrupt", "zugrpc_error", "error", "condition"),
+        list(message = "interrupted", call = NULL)
+      ))),
+      Interrupt = stop(grpc_transport_condition("connection reset")),
+      ReleaseExecute = release
+    )
+  }
+  err <- tryCatch(spark_collect(q), error = identity)
+  expect_s3_class(err, "zuspark_interrupt_error")
+  expect_match(conditionMessage(err), "could not be asked", fixed = TRUE)
+  expect_s3_class(err$interrupt_failure, "zuspark_rpc_error")
+  close_connection(con)
+})
+
+test_that("spark_interrupt() refuses a query of another connection", {
+  local_replay("sql-query")
+  con <- replay_connect("sql-query")
+  q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
+  # A second connection: a copy of the first, which is not identical() to it.
+  other <- new.env(parent = emptyenv())
+  for (n in ls(con, all.names = TRUE)) assign(n, get(n, con), other)
+  class(other) <- class(con)
+  expect_error(spark_interrupt(other, q), class = "zuspark_error")
+  close_connection(con)
+})
