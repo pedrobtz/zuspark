@@ -25,19 +25,23 @@ Every \verb{spark_*()} function also accepts the DBI connection.
 Results follow zuspark's types: a value R cannot hold exactly is an error
 unless \code{lossy} says otherwise. Pass \code{lossy} to \code{dbGetQuery()} or
 \code{dbSendQuery()}, or set \code{options(zuspark.lossy = "allow")} (or
-\code{"character"}) for every DBI and dbplyr query.
+\code{"character"}) for every DBI and dbplyr query, since many Spark tables
+have \code{DECIMAL} or \code{BIGINT} columns. \code{dbFetch(res, n)} returns the rows in
+chunks, but reads the whole result from the server on its first call.
 
-\code{dbWriteTable()} and \code{copy_to()} send the data as SQL literals, which
-suits small tables; a temporary table is a temporary view of the
-session. Spark has no transactions, so \code{dbBegin()} is an error.
-\code{dbExecute()} returns the number of rows the statement produced, since
-Spark does not report rows affected.
+\code{dbWriteTable()}, \code{dbAppendTable()} and \code{copy_to()} send the rows as SQL
+literals, which suits small tables: they warn above
+\code{getOption("zuspark.write_warn_rows", 10000)} rows. A temporary table is
+a temporary view of the session. Spark has no transactions, so
+\code{dbBegin()} is an error, and it does not report rows affected, so
+\code{dbExecute()} returns \code{NA}.
 }
 \examples{
 \dontshow{if (nzchar(Sys.getenv("SPARK_REMOTE")) && requireNamespace("DBI", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 con <- DBI::dbConnect(spark_driver())
 DBI::dbGetQuery(con, "SELECT id, id * 2 AS twice FROM range(3)")
-DBI::dbWriteTable(con, "small", data.frame(x = 1:3, y = c("a", "b", "c")), temporary = TRUE)
+small <- data.frame(x = 1:3, y = c("a", "b", "c"))
+DBI::dbWriteTable(con, "small", small, temporary = TRUE)
 DBI::dbListTables(con)
 DBI::dbDisconnect(con)
 \dontshow{\}) # examplesIf}

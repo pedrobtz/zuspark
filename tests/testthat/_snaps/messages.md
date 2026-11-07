@@ -16,6 +16,14 @@
       Error:
       ! `user_agent` must be NULL or a single non-empty string.
 
+# protocol errors
+
+    Code
+      spark_collect(q)
+    Condition
+      Error:
+      ! A response for operation 00000000-0000-4000-8000-000000000000 arrived on operation 9fef00a2-cd37-44c3-b16a-165064c402c2.
+
 # session errors
 
     Code
@@ -24,21 +32,13 @@
       Error:
       ! This session was released by `spark_disconnect()`. Reconnect with `spark_connect()`.
 
-# version errors
-
-    Code
-      replay_connect("connect")
-    Condition
-      Error:
-      ! The server runs Spark 3.4.1; zuspark needs Spark 3.5.0 or later.
-
-# protocol errors
+# interrupt errors
 
     Code
       spark_collect(q)
     Condition
       Error:
-      ! A response for operation 00000000-0000-4000-8000-000000000000 arrived on operation 9fef00a2-cd37-44c3-b16a-165064c402c2.
+      ! Interrupted: the server stopped no operation (it had finished).
 
 # rpc and sql errors
 
@@ -56,11 +56,11 @@
       Error:
       ! [TABLE_OR_VIEW_NOT_FOUND] The table or view `no_such_table` cannot be found.
 
-# interrupt errors
+# version errors
 
     Code
-      spark_collect(q)
+      replay_connect("connect")
     Condition
       Error:
-      ! Interrupted: the server stopped no operation (it had finished).
+      ! The server runs Spark 3.4.1; zuspark needs Spark 3.5.0 or later.
 

@@ -6,10 +6,15 @@
 NULL
 
 .onLoad <- function(libname, pkgname) {
-  ns <- topenv()
-  # DBI and dbplyr are in Suggests: their methods are defined now if they
-  # are installed, or when they are loaded later (R/dbi.R).
-  register_dbi_dbplyr(ns)
-  setHook(packageEvent("DBI", "onLoad"), function(...) register_dbi_dbplyr(ns))
-  setHook(packageEvent("dbplyr", "onLoad"), function(...) register_dbplyr())
+  # DBI and dbplyr are in Suggests (R/dbi.R). The DBI classes are defined
+  # now if DBI is installed: once this returns the namespace is locked, so
+  # a DBI installed later needs a restart. dbplyr's methods go into
+  # dbplyr's own namespace, now if it is loaded, or when it is.
+  register_dbi(topenv())
+  register_dbplyr()
+  hook <- packageEvent("dbplyr", "onLoad")
+  # One hook, whatever reloaded zuspark before (devtools::load_all()).
+  kept <- Filter(function(f) !isTRUE(attr(f, "zuspark")), getHook(hook))
+  setHook(hook, kept, action = "replace")
+  setHook(hook, structure(function(...) register_dbplyr(), zuspark = TRUE))
 }

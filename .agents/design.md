@@ -920,14 +920,23 @@ any of them.
   `Suggests`, not `Imports`. `spark_driver()` is exported; the S4 classes
   `ZusparkDriver`, `ZusparkConnection` (wrapping the same
   `zuspark_connection`) and `ZusparkResult`, and their DBI methods, are
-  defined in `.onLoad()` when DBI is installed, or by a load hook when DBI
-  arrives later, since top-level S4 definitions would be frozen at install
-  time. They inherit DBI's defaults. dbplyr's own 'Spark SQL' methods
+  defined in `.onLoad()` when DBI is installed, since top-level S4
+  definitions would be frozen at install time; the namespace is locked
+  once `.onLoad()` returns, so a DBI installed later needs a restart, which
+  `spark_driver()` says. They inherit DBI's defaults. dbplyr is never
+  loaded by zuspark: its methods are registered when it loads. dbplyr's own 'Spark SQL' methods
   (`sql_dialect`, `db_compute`, `db_copy_to`, `dbplyr_edition`) are
   registered for `ZusparkConnection`, so zuspark adds no SQL translation of
   its own. Writes (`dbWriteTable()`, `copy_to()`) send SQL literals as a
   `VALUES` select, for small tables; bulk upload is `spark_write()` (§14).
-  Spark has no transactions and does not report rows affected.
+  Spark has no transactions and does not report rows affected, so
+  `dbExecute()` returns `NA`. Rows are appended by column name, timestamps
+  are written as instants (`timestamp_micros()`), and a permanent table is
+  overwritten by dropping it first, since Spark's session catalog has no
+  `CREATE OR REPLACE TABLE … AS`. A lossy error on a result with no rows is
+  retried with `lossy = "allow"`, so that dbplyr can read a table's
+  columns (`WHERE 0 = 1`) when it has `DECIMAL`s. Checked by a critical
+  review with DBItest against Spark 4.2.1 before merging.
 - **D6 (C).** Results are `zuarrow` handles first and data frames
   second; `spark_collect()` is `arrow_to_r()` over `spark_fetch()`.
 - **D7 (C).** Server floor 3.5.0. Spark 3.4 lacks `Interrupt` and

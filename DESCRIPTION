@@ -32,7 +32,7 @@ Imports:
     zuid (>= 0.1.0),
     zuproto (>= 0.1.0)
 Suggests:
-    DBI,
+    DBI (>= 1.1.0),
     dbplyr (>= 2.4.0),
     decimal,
     dplyr,

@@ -106,3 +106,68 @@ test_that("dbplyr translates for a zuspark connection with its Spark SQL backend
   expect_identical(dbplyr::dbplyr_edition(con), 2L)
   expect_match(dbplyr::db_connection_describe(con), "^Spark 4.2.1 at ")
 })
+
+test_that("literals: doubles one at a time, specials, instants, integer64 and NULL blobs", {
+  expect_identical(
+    spark_literals(c(Inf, -Inf, NaN, NA, 1e-300, 0.1)),
+    c(
+      "CAST('Infinity' AS DOUBLE)", "CAST('-Infinity' AS DOUBLE)", "CAST('NaN' AS DOUBLE)",
+      "CAST(NULL AS DOUBLE)", sprintf("CAST(%.17g AS DOUBLE)", 1e-300), sprintf("CAST(%.17g AS DOUBLE)", 0.1)
+    )
+  )
+  # Each value alone: a large neighbour doesn't change another's notation.
+  expect_identical(spark_literals(c(1, 1e300))[[1]], spark_literals(1))
+  expect_identical(
+    spark_literals(as.POSIXct("2026-11-07 12:00:00", tz = "UTC")),
+    "CAST(timestamp_micros(1794052800000000) AS TIMESTAMP)"
+  )
+  expect_identical(spark_literals(list(as.raw(1), NULL))[[2]], "CAST(NULL AS BINARY)")
+  # A stand-in: loading bit64 would change how zuarrow converts BIGINT for
+  # every later test.
+  expect_identical(spark_data_type(structure(0, class = "integer64")), "BIGINT")
+})
+
+test_that("zero-length quoting is zero-length, and an NA identifier an error", {
+  expect_identical(spark_quote_string(character()), character())
+  expect_identical(spark_quote_identifier(character()), character())
+  expect_error(spark_quote_identifier(NA_character_), class = "zuspark_error")
+})
+
+test_that("durations are refused with a reason, and field.types override types", {
+  expect_error(spark_data_type(as.difftime(1, units = "secs")), class = "zuspark_error")
+  expect_match(
+    spark_values_select(data.frame(a = 1:2), types = c(a = "BIGINT")),
+    "CAST(1 AS BIGINT)", fixed = TRUE
+  )
+  expect_error(spark_values_select(data.frame(a = 1), types = c(b = "INT")), class = "zuspark_error")
+})
+
+test_that("a statement result has NA rows affected, a query 0, and cleared results refuse use", {
+  skip_if_not_installed("DBI")
+  local_replay("sql-query")
+  con <- DBI::dbConnect(spark_driver(), con = replay_connect("sql-query"))
+  res <- DBI::dbSendQuery(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
+  expect_identical(DBI::dbGetRowsAffected(res), 0L)
+  for (n in list(NA, "a", -2, 1.5)) {
+    expect_error(DBI::dbFetch(res, n), class = "zuspark_error")
+  }
+  DBI::dbClearResult(res)
+  expect_error(DBI::dbHasCompleted(res), class = "zuspark_error")
+  expect_error(DBI::dbGetStatement(res), class = "zuspark_error")
+  expect_error(DBI::dbColumnInfo(res), class = "zuspark_error")
+  expect_warning(DBI::dbClearResult(res), "already cleared")
+})
+
+test_that("dbConnect() refuses other drivers' arguments instead of sending them as headers", {
+  skip_if_not_installed("DBI")
+  expect_error(DBI::dbConnect(spark_driver(), "sc://fixture.invalid", bigint = "integer"), class = "zuspark_error")
+})
+
+test_that("loading zuspark does not load dbplyr", {
+  skip_if_not_installed("dbplyr")
+  script <- "loadNamespace('zuspark'); cat(isNamespaceLoaded('dbplyr'))"
+  skip_if(!"zuspark" %in% rownames(utils::installed.packages()), "zuspark is not installed")
+  rscript <- file.path(R.home("bin"), "Rscript")
+  out <- system2(rscript, c("-e", shQuote(script)), stdout = TRUE, stderr = FALSE)
+  expect_identical(utils::tail(out, 1), "FALSE")
+})
