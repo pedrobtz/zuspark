@@ -23,7 +23,7 @@ listens on port 15002; this article runs against one.
 con <- spark_connect()
 con
 #> <zuspark_connection> sc://127.0.0.1:15002 (Spark 4.2.1)
-#>   session: 0297a351-b79c-4064-8dfa-d9eb7eb3407b
+#>   session: 8a83a1af-ba2c-4102-b07b-ba91ab86f150
 spark_version(con)
 #> [1] "4.2.1"
 ```
