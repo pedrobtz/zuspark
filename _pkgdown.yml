@@ -27,6 +27,9 @@ reference:
   - spark_sql
   - spark_collect
   - spark_schema
+- title: DBI and dbplyr
+  contents:
+  - spark_driver
 - title: Errors and interrupts
   contents:
   - spark_error_details

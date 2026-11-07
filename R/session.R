@@ -121,6 +121,7 @@ spark_connect <- function(
 #'   session.
 #' @export
 spark_disconnect <- function(con, allow_reconnect = FALSE) {
+  con <- unwrap_con(con)
   check_connection(con)
   if (
     !is.logical(allow_reconnect) ||
@@ -155,6 +156,7 @@ spark_disconnect <- function(con, allow_reconnect = FALSE) {
 #' spark_session_id(con)
 #' spark_disconnect(con)
 spark_version <- function(con) {
+  con <- unwrap_con(con)
   check_connection(con)
   con$spark_version
 }
@@ -162,6 +164,7 @@ spark_version <- function(con) {
 #' @rdname spark_version
 #' @export
 spark_session_id <- function(con) {
+  con <- unwrap_con(con)
   check_connection(con)
   c(
     client = con$session_id,

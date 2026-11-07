@@ -24,6 +24,7 @@ Language: en-GB
 Depends:
     R (>= 4.1)
 Imports:
+    methods,
     stats,
     utils,
     zuarrow,
@@ -31,7 +32,10 @@ Imports:
     zuid (>= 0.1.0),
     zuproto (>= 0.1.0)
 Suggests:
+    DBI,
+    dbplyr (>= 2.4.0),
     decimal,
+    dplyr,
     testthat (>= 3.0.0),
     withr,
     zuint,
@@ -45,6 +49,6 @@ Remotes:
     pedrobtz/zuproto,
     pedrobtz/zutempo
 Config/testthat/edition: 3
-Config/Needs/website: arrow, DBI, duckdb, nanoarrow, knitr, rmarkdown
+Config/Needs/website: arrow, DBI, dbplyr, dplyr, duckdb, nanoarrow, knitr, rmarkdown
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.1.0

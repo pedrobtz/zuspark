@@ -138,6 +138,8 @@ See `.agents/design.md` for the why; this is the where.
   with reattachable execution: the reattach loop, inline releases every
   16 responses, release-all on completion or abandonment, and the
   per-response checks. [R/sql.R](R/sql.R) builds the user verbs on it.
+- [R/dbi.R](R/dbi.R): `spark_driver()` and the DBI driver; dbplyr's own
+  'Spark SQL' methods registered for its connection (design D5, amended).
 - [R/databricks.R](R/databricks.R): `spark_connect_databricks()`, the
   connection string and compute header Databricks needs.
 - [R/url.R](R/url.R) parses `sc://` strings; [R/session.R](R/session.R)
@@ -169,6 +171,11 @@ Licences of the bundled protocol files are in
 - **A new execution path goes through `execute_plan()`.** It is what
   releases the server's buffer; an ExecutePlan that bypasses it leaves
   the result in the server's memory until the session dies.
+- **No S4 definition at the top level of `R/`.** DBI and dbplyr are
+  Suggests: `register_dbi()` defines the classes and methods in
+  `.onLoad()`, or from a load hook, only when DBI is installed. A
+  top-level `setClass()` or `setMethod()` would need DBI at install time
+  and freeze its absence into the build.
 - **The channel is never stored on the connection.** It lives in the
   namespace's `channels` registry, reached by `connection_channel(con)`:
   its headers hold the bearer token, and connections travel inside

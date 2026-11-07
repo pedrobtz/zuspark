@@ -339,6 +339,10 @@ spark_fetch(x)                     # a zuarrow stream
 spark_execute(con, sql)            # run, discard rows, count them
 spark_interrupt(con, x = NULL)     # one query, or every operation
 
+# DBI and dbplyr (D5, amended 2026-11-07; DBI in Suggests)
+spark_driver()                     # DBI::dbConnect(spark_driver(), url)
+                                   # or dbConnect(spark_driver(), con = con)
+
 zuspark_info()
 ```
 
@@ -911,7 +915,19 @@ any of them.
   does not have. Re-pinning is a stage-less pull request that re-runs
   the snapshots.
 - **D5 (C).** No DBI import. A DBI shim is §14; the verbs are DBI-shaped
-  so that the shim is thin.
+  so that the shim is thin. **Amended 2026-11-07 by the maintainer (Stage 11):** the DBI
+  driver and dbplyr support are in v0.1.0, with DBI, dbplyr and dplyr in
+  `Suggests`, not `Imports`. `spark_driver()` is exported; the S4 classes
+  `ZusparkDriver`, `ZusparkConnection` (wrapping the same
+  `zuspark_connection`) and `ZusparkResult`, and their DBI methods, are
+  defined in `.onLoad()` when DBI is installed, or by a load hook when DBI
+  arrives later, since top-level S4 definitions would be frozen at install
+  time. They inherit DBI's defaults. dbplyr's own 'Spark SQL' methods
+  (`sql_dialect`, `db_compute`, `db_copy_to`, `dbplyr_edition`) are
+  registered for `ZusparkConnection`, so zuspark adds no SQL translation of
+  its own. Writes (`dbWriteTable()`, `copy_to()`) send SQL literals as a
+  `VALUES` select, for small tables; bulk upload is `spark_write()` (§14).
+  Spark has no transactions and does not report rows affected.
 - **D6 (C).** Results are `zuarrow` handles first and data frames
   second; `spark_collect()` is `arrow_to_r()` over `spark_fetch()`.
 - **D7 (C).** Server floor 3.5.0. Spark 3.4 lacks `Interrupt` and
@@ -932,8 +948,9 @@ any of them.
 
 ## 14. Later versions, in the order they are expected
 
-- **A DBI shim**: `dbConnect()`, `dbGetQuery()`, `dbSendQuery()` over
-  `spark_sql()`, then `dbplyr` through `backend-spark-sql.R`.
+- ~~**A DBI shim**~~: in v0.1.0 since 2026-11-07 (D5, amended).
+  Still later: fetching in chunks as batches arrive, and parameterised
+  queries through DBI's `params`.
 - **Parameterised SQL** through `SQL.named_arguments` and
   `pos_arguments`, which need `Expression.Literal` built from R values,
   the first piece of a plan builder.
