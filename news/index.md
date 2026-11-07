@@ -94,6 +94,28 @@
 - A connection-string value with an invalid percent-escape, and an empty
   `token=`, are refused instead of being silently changed (#31).
 
+- An R interrupt during any call is a `zuspark_interrupt_error`; only an
+  interrupt while a query’s result is read also stops the job on the
+  server. When that Interrupt call itself fails, the error says so
+  instead of reporting the operation as finished (#33, \#55).
+
+- [`spark_interrupt()`](https://pedrobtz.github.io/zuspark/reference/spark_interrupt.md)
+  refuses a query of another connection (#35).
+
+- A printed connection or query hides every parameter sent as a header,
+  and any user name and password before the host, not only `token`
+  (#36).
+
+- A connect that fails after the session was made, or refuses a server
+  older than Spark 3.5, releases that session on the server (#37).
+
+- An abandoned read cancels its stream, a failed release during a read
+  no longer fails a query, and a cut before a reattach’s first response
+  is reattached again (#32, \#34).
+
+- [`spark_disconnect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
+  refuses an `allow_reconnect` that is not `TRUE` or `FALSE` (#38).
+
 - A malformed connection string’s error never prints a token: the
   missing-host message redacts it, and a malformed parameter is named by
   its key only (#25).
