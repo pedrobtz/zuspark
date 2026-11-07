@@ -81,13 +81,20 @@ test_that("lossy = 'allow' widens them", {
   expect_s3_class(convert_c(pyspark_bytes("interval_day_time"), lossy = "allow"), "difftime")
 })
 
-test_that("with the exact packages registered, those types convert exactly", {
-  for (i in seq_len(nrow(lossy))) {
-    pkg <- lossy$package[[i]]
+# One test per package, so that one package registering is checked even
+# while another is not (#48). Exact conversion is after 0.1.0 (§7.7).
+for (pkg in unique(lossy$package)) {
+  test_that(sprintf("with %s registered, its types convert exactly", pkg), {
     skip_if_not(registered_with_zuarrow(pkg), sprintf("%s does not register with zuarrow yet", pkg))
-    expect_no_error(convert_c(pyspark_bytes(lossy$name[[i]])))
-  }
-})
+    rows <- lossy[lossy$package == pkg, ]
+    for (i in seq_len(nrow(rows))) {
+      got <- convert_c(pyspark_bytes(rows$name[[i]]))
+      # Exact means the value round-trips to Spark's text.
+      expect_identical(as.character(got[[1]]), rows$text[[i]], label = rows$name[[i]])
+      expect_true(is.na(got[[2]]), label = rows$name[[i]])
+    }
+  })
+}
 
 test_that("`to` and `lossy` pass through spark_collect()", {
   local_replay("sql-query")

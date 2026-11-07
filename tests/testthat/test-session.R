@@ -3,7 +3,7 @@
 # (connect and disconnect only).
 
 test_that("connect, read, set, unset and disconnect replay", {
-  calls <- local_replay("session")
+  calls <- local_replay("session", exhaust = TRUE)
   con <- replay_connect("session")
   expect_s3_class(con, "zuspark_connection")
   expect_identical(calls$methods, c("Config", "AnalyzePlan"))
@@ -39,7 +39,7 @@ test_that("reading every setting returns a named character vector", {
 })
 
 test_that("every request carries the session, user and client type", {
-  calls <- local_replay("connect")
+  calls <- local_replay("connect", exhaust = TRUE)
   con <- replay_connect("connect")
   spark_disconnect(con)
   for (req in calls$requests) {

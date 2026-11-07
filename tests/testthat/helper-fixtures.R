@@ -102,7 +102,9 @@ replay_stream <- function(messages) {
   )
 }
 
-local_replay <- function(scenario, responses = list(), env = parent.frame()) {
+# With `exhaust = TRUE`, the test also fails unless every recorded call was
+# made by the time it ends (#50).
+local_replay <- function(scenario, responses = list(), env = parent.frame(), exhaust = FALSE) {
   calls <- fixture_calls(scenario)
   state <- new.env(parent = emptyenv())
   state$n <- 0L
@@ -136,6 +138,15 @@ local_replay <- function(scenario, responses = list(), env = parent.frame()) {
     recorded
   }
   withr::local_options(zuspark.transport = transport, .local_envir = env)
+  if (exhaust) {
+    withr::defer(
+      testthat::expect_identical(
+        state$n, nrow(calls),
+        label = sprintf("calls made of scenario '%s'", scenario)
+      ),
+      envir = env
+    )
+  }
 
   # Executions get the operation ids they were recorded with, in order, so
   # that the recorded responses answer for the operation zuspark runs.
@@ -162,8 +173,12 @@ fixture_session_id <- function(scenario) {
 }
 
 # Connects through the replay installed by local_replay(scenario).
-replay_connect <- function(scenario, url = "sc://fixture.invalid", ...) {
-  spark_connect(url, session_id = fixture_session_id(scenario), user_id = "zuspark", ...)
+# The connection is closed when the test ends, so that no finalizer runs
+# a replay transport from inside a later test (#51).
+replay_connect <- function(scenario, url = "sc://fixture.invalid", ..., env = parent.frame()) {
+  con <- spark_connect(url, session_id = fixture_session_id(scenario), user_id = "zuspark", ...)
+  withr::defer(close_connection(con), envir = env)
+  con
 }
 
 # A condition shaped as zugrpc raises it for a non-OK status, or for a

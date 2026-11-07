@@ -1,7 +1,7 @@
 # SQL (design §7.3, §7.5), replayed from tests/testthat/fixtures/sql-*.
 
 test_that("a query comes back unexecuted, then collects", {
-  calls <- local_replay("sql-query")
+  calls <- local_replay("sql-query", exhaust = TRUE)
   con <- replay_connect("sql-query")
   q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
   expect_s3_class(q, "zuspark_query")
