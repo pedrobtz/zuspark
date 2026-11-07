@@ -18,8 +18,9 @@ known_responses <- c(
 )
 response_header <- c("session_id", "server_side_session_id", "operation_id", "response_id")
 
-# Runs `plan` and calls `on_response(response)` for each response with a
-# member other than the header. Returns a list of `operation_id`,
+# Runs `plan` and calls `on_response(response)` for each response that
+# carries an `arrow_batch` or a `sql_command_result`; the schema, metrics
+# and progress responses are kept on the returned list instead. Returns a list of `operation_id`,
 # `responses` (how many), `reattaches`, `skipped` (responses of unknown
 # types), `schema`, `metrics` and `observed_metrics`.
 execute_plan <- function(con, plan, on_response = function(response) NULL,
@@ -40,8 +41,14 @@ execute_plan <- function(con, plan, on_response = function(response) NULL,
 
   # Abandoned (an error, an interrupt): release everything the server
   # still buffers for this operation, best effort.
+  # The stream still open, if any, is cancelled first, so that the
+  # channel does not keep an abandoned HTTP/2 stream (#32).
+  run$stream <- NULL
   on.exit(
-    if (!run$complete) try(release_execute(con, op, all = TRUE), silent = TRUE),
+    if (!run$complete) {
+      if (!is.null(run$stream)) try(run$stream$cancel(), silent = TRUE)
+      try(release_execute(con, op, all = TRUE), silent = TRUE)
+    },
     add = TRUE
   )
 
@@ -54,6 +61,7 @@ execute_plan <- function(con, plan, on_response = function(response) NULL,
     )
   )
   stream <- open_execute(con, request)
+  run$stream <- stream
   stalled <- 0L
   repeat {
     before <- run$responses
@@ -71,13 +79,14 @@ execute_plan <- function(con, plan, on_response = function(response) NULL,
       )
     }
     stream <- reattach_execute(con, op, run, request, ended)
+    run$stream <- stream
     run$reattaches <- run$reattaches + 1L
   }
   # The result is complete: the statement ran, whatever the release does.
   # A failed release must not read as a failed statement, which a caller
   # might run again (D8); the server frees the buffer when the session
   # ends. Not a retry: the release is sent once.
-  try(release_execute(con, op, all = TRUE), silent = TRUE)
+  release_best_effort(con, op, all = TRUE)
   list(
     operation_id = op,
     responses = run$responses,
@@ -150,7 +159,10 @@ read_execute_stream <- function(con, op, stream, run, on_response) {
 
     run$unreleased <- run$unreleased + 1L
     if (!run$complete && run$unreleased >= release_every && !is.null(run$last_response_id)) {
-      release_execute(con, op, until = run$last_response_id)
+      # Best effort, as the other releases: a read-only query whose release
+      # fails still has its rows; the next release, or the last, frees what
+      # this one did not (#32).
+      release_best_effort(con, op, until = run$last_response_id)
       run$unreleased <- 0L
     }
   }
@@ -175,10 +187,16 @@ reattach_execute <- function(con, op, run, request, cut) {
   # Nothing consumed yet: look at the first answer before committing to it.
   first <- tryCatch(
     stream$next_response(),
+    zugrpc_error_transport = function(e) e,
     zugrpc_error_status = function(e) e
   )
+  if (inherits(first, "zugrpc_error_transport")) {
+    # A cut like any other: the stream gives the condition back to the
+    # reader, which counts it as a stall and reattaches (#34).
+    return(pushed_back(first, stream))
+  }
   if (inherits(first, "condition")) {
-    if (grepl("OPERATION_NOT_FOUND", conditionMessage(first), fixed = TRUE)) {
+    if (operation_not_found(first)) {
       return(open_execute(con, request))
     }
     stop(first)
@@ -187,6 +205,19 @@ reattach_execute <- function(con, op, run, request, cut) {
 }
 
 # A stream whose first response has already been read.
+# Whether a failed reattach says the server never received the operation.
+# Spark's error class decides; the message is read only when the server
+# sent no ErrorInfo (#34).
+operation_not_found <- function(cnd) {
+  class <- cnd$error_class %||% NA_character_
+  if (!is.na(class)) {
+    return(identical(class, "INVALID_HANDLE.OPERATION_NOT_FOUND"))
+  }
+  grepl("OPERATION_NOT_FOUND", conditionMessage(cnd), fixed = TRUE)
+}
+
+# The stream with `first` put back in front: a response, or a condition,
+# which is raised again when read.
 pushed_back <- function(first, stream) {
   pending <- list(first)
   list(
@@ -194,12 +225,19 @@ pushed_back <- function(first, stream) {
       if (length(pending)) {
         r <- pending[[1L]]
         pending <<- list()
+        if (inherits(r, "condition")) stop(r)
         return(r)
       }
       stream$next_response()
     },
     cancel = stream$cancel
   )
+}
+
+# A release whose call fails is dropped: the rows it covers are already
+# read. A session error still propagates: the server lost the session.
+release_best_effort <- function(con, op, ...) {
+  tryCatch(release_execute(con, op, ...), zuspark_rpc_error = function(e) invisible())
 }
 
 release_execute <- function(con, op, all = FALSE, until = NULL) {

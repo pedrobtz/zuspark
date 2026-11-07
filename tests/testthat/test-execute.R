@@ -294,3 +294,70 @@ test_that("a reattach after a stream that failed before any response keeps its f
   expect_identical(sent, c("ExecutePlan", "ReattachExecute", "ReleaseExecute"))
   close_connection(con)
 })
+
+test_that("a failed inline release keeps the query's rows", {
+  # Inline releases are calls 12 (and the release_until ones) of `reattach`.
+  fail <- function(bytes) stop(grpc_transport_condition())
+  releases <- which(fixture_calls("reattach")$method == "ReleaseExecute")
+  until <- Filter(function(n) !is.null(decode_fixture("reattach", n, "request")$release_until), releases)
+  local_replay("reattach", responses = stats::setNames(rep(list(fail), length(until)), until))
+  con <- replay_connect("reattach")
+  spark_config(con, spark.sql.execution.arrow.maxRecordsPerBatch = 100)
+  df <- spark_collect(spark_sql(con, reattach_sql))
+  expect_identical(df$id, as.numeric(0:999))
+  close_connection(con)
+})
+
+test_that("an abandoned read cancels its stream", {
+  local_replay("sql-query")
+  con <- replay_connect("sql-query")
+  q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
+  recorded <- read_stream_fixture("sql-query", fixture_calls("sql-query")$stem[[5]])
+  release <- read_fixture("sql-query", fixture_calls("sql-query")$stem[[6]], "response")
+  cancelled <- 0L
+  con$transport <- function(con, method, bytes, deadline, streaming = FALSE) {
+    if (method == "ReleaseExecute") return(release)
+    s <- replay_stream(edit_response(recorded, 1L, function(x) {
+      x$operation_id <- "00000000-0000-4000-8000-000000000000"
+      x
+    }))
+    s$cancel <- function() cancelled <<- cancelled + 1L
+    s
+  }
+  expect_error(spark_collect(q), class = "zuspark_protocol_error")
+  expect_identical(cancelled, 1L)
+  close_connection(con)
+})
+
+test_that("OPERATION_NOT_FOUND is read from the error class, the message only without one", {
+  status <- spark_status_condition(error_class = "INVALID_HANDLE.OPERATION_NOT_FOUND", message = "gone")
+  expect_true(operation_not_found(as_zuspark_error(status)))
+  other <- spark_status_condition(error_class = "INVALID_HANDLE.SESSION_CLOSED", message = "OPERATION_NOT_FOUND mentioned")
+  expect_false(operation_not_found(as_zuspark_error(other)))
+  bare <- grpc_status_condition("INTERNAL", "[INVALID_HANDLE.OPERATION_NOT_FOUND] The handle is invalid.")
+  expect_true(operation_not_found(as_zuspark_error(bare)))
+})
+
+test_that("a transport error on a reattach's first read is a cut, and the read reattaches again", {
+  local_replay("sql-query")
+  con <- replay_connect("sql-query")
+  q <- spark_sql(con, "SELECT id, id * 2 AS twice, CAST(id AS STRING) AS s FROM range(5)")
+  recorded <- read_stream_fixture("sql-query", fixture_calls("sql-query")$stem[[5]])
+  release <- read_fixture("sql-query", fixture_calls("sql-query")$stem[[6]], "response")
+  sent <- character()
+  con$transport <- function(con, method, bytes, deadline, streaming = FALSE) {
+    sent <<- c(sent, method)
+    switch(method,
+      ExecutePlan = replay_stream(list(grpc_transport_condition())),
+      ReattachExecute = if (sum(sent == "ReattachExecute") == 1L) {
+        replay_stream(list(grpc_transport_condition()))
+      } else {
+        replay_stream(recorded)
+      },
+      ReleaseExecute = release
+    )
+  }
+  expect_identical(nrow(spark_collect(q)), 5L)
+  expect_identical(sent, c("ExecutePlan", "ReattachExecute", "ReattachExecute", "ReleaseExecute"))
+  close_connection(con)
+})
