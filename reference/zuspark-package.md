@@ -5,7 +5,10 @@ there and returns the results as 'Arrow' data or data frames, without a
 'Java' virtual machine, 'Python' or a 'Spark' installation. Speaks the
 'Spark Connect' protocol itself, in 'R': 'gRPC' calls through 'zugrpc',
 protocol buffer messages through 'zuproto' and 'Arrow' record batches
-through 'zuarrow'.
+through 'zuarrow'. Long results are read with reattachable execution, so
+a stream cut by a proxy or a timeout resumes where it stopped. Works
+with a local 'Spark' server, a cluster, and 'Databricks' workspaces,
+including their serverless compute.
 
 ## See also
 
