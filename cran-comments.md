@@ -22,3 +22,10 @@ Through the `pedrobtz/r-actions` workflows, full profile:
 0 errors | 0 warnings | 0 notes
 
 * This is a new release.
+
+## Method References
+
+There are no published references describing the methods in this
+package. It implements the 'Spark Connect' protocol as defined by Apache
+Spark's protocol buffer files, which it ships in `inst/proto` with their
+licences (`inst/COPYRIGHTS`).
