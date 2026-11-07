@@ -44,7 +44,9 @@ test_that("live: a deadline too short for a call is a zuspark_rpc_error", {
 
 test_that("live: no server on the port is a transport error", {
   remote <- live_remote()
-  host <- sub("^sc://([^:/]+).*$", "\\1", remote)
+  # The host as written, a bracketed IPv6 address included.
+  host <- parse_spark_url(remote)$host
+  if (grepl(":", host, fixed = TRUE) && !startsWith(host, "[")) host <- paste0("[", host, "]")
   err <- tryCatch(spark_connect(sprintf("sc://%s:1", host), deadline = 5), error = identity)
   expect_s3_class(err, "zuspark_rpc_error")
   expect_s3_class(err, "zugrpc_error_transport")
@@ -52,6 +54,7 @@ test_that("live: no server on the port is a transport error", {
 
 test_that("live: a released session refuses every verb", {
   con <- spark_connect(live_remote())
+  withr::defer(if (!isTRUE(con$released)) spark_disconnect(con))
   q <- spark_sql(con, "SELECT 1 AS x")
   expect_true(spark_disconnect(con))
   expect_error(spark_sql(con, "SELECT 1"), class = "zuspark_session_error")

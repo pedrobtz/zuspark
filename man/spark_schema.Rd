@@ -24,7 +24,8 @@ is the server's mapping of these types, is the schema of
 \examples{
 \dontshow{if (nzchar(Sys.getenv("SPARK_REMOTE"))) withAutoprint(\{ # examplesIf}
 con <- spark_connect()
-spark_schema(spark_sql(con, "SELECT id, CAST(id AS DECIMAL(10, 2)) AS d FROM range(3)"))
+q <- spark_sql(con, "SELECT id, CAST(id AS DECIMAL(10, 2)) AS d FROM range(3)")
+spark_schema(q)
 spark_disconnect(con)
 \dontshow{\}) # examplesIf}
 }

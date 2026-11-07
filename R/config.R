@@ -84,6 +84,10 @@ config_rpc <- function(con, operation) {
 # value is NA.
 config_pairs <- function(response) {
   pairs <- response$pairs
+  keys <- vapply(pairs, function(p) p$key %||% NA_character_, character(1))
+  if (anyNA(keys)) {
+    zuspark_abort("zuspark_protocol_error", "The server sent a setting without a name.")
+  }
   values <- vapply(pairs, function(p) p$value %||% NA_character_, character(1))
-  stats::setNames(values, vapply(pairs, `[[`, character(1), "key"))
+  stats::setNames(values, keys)
 }

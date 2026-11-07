@@ -32,7 +32,10 @@ when \code{spark.sql.connect.enrichError.enabled} is on (the default).
 \examples{
 \dontshow{if (nzchar(Sys.getenv("SPARK_REMOTE"))) withAutoprint(\{ # examplesIf}
 con <- spark_connect()
-err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
+err <- tryCatch(
+  spark_sql(con, "SELECT * FROM no_such_table"),
+  error = identity
+)
 err$error_class
 details <- spark_error_details(err)
 details[[1]]$message

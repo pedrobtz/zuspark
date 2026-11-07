@@ -32,7 +32,7 @@ spark_interrupt <- function(con, x = NULL) {
       return(invisible(character()))
     }
   }
-  if (!is.null(x) && (!is.character(x) || length(x) != 1L || is.na(x))) {
+  if (!is.null(x) && !is_string(x, empty_ok = TRUE)) {
     zuspark_abort("zuspark_error", "`x` must be NULL, an operation id or a query.")
   }
   invisible(interrupt_rpc(con, x))

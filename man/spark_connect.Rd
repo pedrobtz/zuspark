@@ -22,9 +22,11 @@ spark_disconnect(con, allow_reconnect = FALSE)
 defaults to the \code{SPARK_REMOTE} environment variable. The default port
 is 15002. The reserved parameters are \code{token} (a bearer token; it
 turns TLS on, except to \code{localhost} without \code{use_ssl}), \code{use_ssl},
-\code{user_id}, \code{user_agent}, \code{session_id}, \code{grpc_max_message_size} and
-\code{grpc_keepalive_enabled}, \verb{_time_ms} and \verb{_timeout_ms}. Every other
-parameter is sent as a header on every call.}
+\code{user_id}, \code{user_agent}, \code{session_id}, \code{grpc_max_message_size},
+\code{grpc_keepalive_enabled}, \code{grpc_keepalive_time_ms},
+\code{grpc_keepalive_timeout_ms} and \code{grpc_keepalive_without_calls}
+(accepted and ignored, as PySpark does). Every other parameter is sent
+as a header on every call.}
 
 \item{...}{Named parameters appended to \code{url}, such as \code{token = "..."}.}
 

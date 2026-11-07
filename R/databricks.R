@@ -40,7 +40,7 @@ spark_connect_databricks <- function(host = Sys.getenv("DATABRICKS_HOST"),
                                      cluster_id = NULL, ...,
                                      session_id = NULL, headers = NULL) {
   host <- databricks_host(host)
-  if (!is.character(token) || length(token) != 1L || is.na(token) || !nzchar(token)) {
+  if (!is_string(token)) {
     url_abort("token", "No Databricks token: pass `token`, or set DATABRICKS_TOKEN.")
   }
   headers <- check_headers(headers)
@@ -50,7 +50,7 @@ spark_connect_databricks <- function(host = Sys.getenv("DATABRICKS_HOST"),
     session_id <- as.character(unclass(session_id))
     headers[["x-databricks-session-id"]] <- session_id
   } else {
-    if (!is.character(cluster_id) || length(cluster_id) != 1L || is.na(cluster_id) || !nzchar(cluster_id)) {
+    if (!is_string(cluster_id)) {
       url_abort("cluster_id", "`cluster_id` must be NULL or a cluster's id.")
     }
     headers[["x-databricks-cluster-id"]] <- cluster_id
@@ -65,7 +65,7 @@ spark_connect_databricks <- function(host = Sys.getenv("DATABRICKS_HOST"),
 # The workspace's host name, from a URL as the browser shows it or a bare
 # host name.
 databricks_host <- function(host) {
-  if (!is.character(host) || length(host) != 1L || is.na(host) || !nzchar(trimws(host))) {
+  if (!is_string(host)) {
     url_abort("host", "No Databricks workspace: pass `host`, or set DATABRICKS_HOST.")
   }
   host <- sub("^[A-Za-z][A-Za-z0-9+.-]*://", "", trimws(host))

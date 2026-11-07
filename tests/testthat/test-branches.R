@@ -147,3 +147,29 @@ test_that("observed metrics are kept on the query", {
   expect_length(q$observed_metrics, 1L)
   expect_identical(q$observed_metrics[[1]]$name, "rows_seen")
 })
+
+test_that("Spark's JSON values decode surrogate pairs and cut-short escapes", {
+  expect_identical(parse_json_strings('["\\ud83d\\ude00"]'), "\U0001F600")
+  expect_identical(parse_json_strings('["a\\u00e9"]'), "a\u00e9")
+  expect_identical(parse_json_strings('["x\\u12"]'), "x\ufffd")
+  expect_identical(parse_json_strings('["\\ud83d"]'), "\ufffd")
+})
+
+test_that("an interval type with fields out of range is a protocol error", {
+  expect_error(
+    format_data_type(list(day_time_interval = list(start_field = 0, end_field = 9))),
+    class = "zuspark_protocol_error"
+  )
+})
+
+test_that("a setting without a name is a protocol error", {
+  expect_error(
+    config_pairs(list(pairs = list(list(value = "x")))),
+    class = "zuspark_protocol_error"
+  )
+})
+
+test_that("only a connection is accepted as one", {
+  expect_error(spark_version(list()), class = "zuspark_error")
+  expect_error(spark_sql("sc://h", "SELECT 1"), class = "zuspark_error")
+})

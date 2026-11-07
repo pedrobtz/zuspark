@@ -16,7 +16,7 @@ known_responses <- c(
   "arrow_batch", "sql_command_result", "result_complete", "schema",
   "metrics", "observed_metrics", "execution_progress"
 )
-response_header <- c("session_id", "server_side_session_id", "operation_id", "response_id")
+response_header_fields <- c("session_id", "server_side_session_id", "operation_id", "response_id")
 
 # Runs `plan` and calls `on_response(response)` for each response that
 # carries an `arrow_batch` or a `sql_command_result`; the schema, metrics
@@ -78,7 +78,7 @@ execute_plan <- function(con, plan, on_response = function(response) NULL,
         operation_id = op
       )
     }
-    stream <- reattach_execute(con, op, run, request, ended)
+    stream <- reattach_execute(con, op, run, request)
     run$stream <- stream
     run$reattaches <- run$reattaches + 1L
   }
@@ -138,9 +138,12 @@ read_execute_stream <- function(con, op, stream, run, on_response) {
       )
     }
     run$responses <- run$responses + 1L
-    run$last_response_id <- response$response_id %||% run$last_response_id
+    # An empty id, like a missing one, names nothing to resume from.
+    if (nzchar(response$response_id %||% "")) {
+      run$last_response_id <- response$response_id
+    }
 
-    members <- setdiff(names(response), response_header)
+    members <- setdiff(names(response), response_header_fields)
     if (!is.null(response$schema)) run$schema <- response$schema
     if (!is.null(response$metrics)) run$metrics <- response$metrics
     if (length(response$observed_metrics)) {
@@ -172,7 +175,7 @@ read_execute_stream <- function(con, op, stream, run, on_response) {
 # response may never have reached the server: reattach then answers
 # INVALID_HANDLE.OPERATION_NOT_FOUND, and only then is the ExecutePlan
 # re-sent, since the statement cannot have run.
-reattach_execute <- function(con, op, run, request, cut) {
+reattach_execute <- function(con, op, run, request) {
   fields <- c(session_fields(con), list(operation_id = op))
   if (!is.null(run$last_response_id)) {
     fields$last_response_id <- run$last_response_id
