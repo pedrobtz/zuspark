@@ -447,7 +447,10 @@ quotes only the parameter's key. A malformed port, which Python reports as a
 (#31):* a value with an invalid percent-escape, or `%00`, is a
 `zuspark_url_error` (part `parameter`) rather than the changed value
 `utils::URLdecode()` returns, and an empty `token=` is one too (part
-`token`), since either would still send an `authorization` header.
+`token`), since either would still send an `authorization` header. *2026-11-07 (#36):* a printed string (the
+connection, a query) drops user information before the host and shows
+`<redacted>` for `token` and for every parameter sent as a header; the
+other reserved parameters stay readable.
 
 ### 7.2 Sessions
 

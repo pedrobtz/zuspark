@@ -228,6 +228,19 @@ check_session_id <- function(session_id) {
 }
 
 # The connection string for display: the token's value never prints.
+# The string as it may be printed: no user information before the host,
+# and no value of `token` or of any parameter sent as a header, which may
+# be a credential such as `authorization` or an API key (#36). The other
+# reserved parameters configure the channel and stay readable.
 redact_url <- function(url) {
-  gsub("(;token=)[^;]*", "\\1<redacted>", url)
+  url <- sub("^(sc://)[^/;@]*@", "\\1", url)
+  parts <- strsplit(url, ";", fixed = TRUE)[[1L]]
+  if (length(parts) < 2L) {
+    return(url)
+  }
+  params <- parts[-1L]
+  keys <- sub("=.*$", "", params)
+  secret <- grepl("=", params, fixed = TRUE) & !keys %in% setdiff(spark_url_reserved, "token")
+  params[secret] <- paste0(keys[secret], "=<redacted>")
+  paste(c(parts[[1L]], params), collapse = ";")
 }

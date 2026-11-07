@@ -86,12 +86,17 @@ spark_connect <- function(url = Sys.getenv("SPARK_REMOTE"), ...,
   class(con) <- "zuspark_connection"
   reg.finalizer(con, finalize_connection)
 
+  opened <- FALSE
   tryCatch(
     {
       config_rpc(con, list(get_all = list()))
+      opened <- TRUE
       con$spark_version <- version_rpc(con)
     },
     error = function(e) {
+      # Config made the session on the server: release it rather than
+      # leave it until the server's idle timeout (#37).
+      if (opened) try(release_session(con, deadline = 5), silent = TRUE)
       close_connection(con)
       stop(e)
     }
@@ -108,6 +113,9 @@ spark_connect <- function(url = Sys.getenv("SPARK_REMOTE"), ...,
 #' @export
 spark_disconnect <- function(con, allow_reconnect = FALSE) {
   check_connection(con)
+  if (!is.logical(allow_reconnect) || length(allow_reconnect) != 1L || is.na(allow_reconnect)) {
+    zuspark_abort("zuspark_error", "`allow_reconnect` must be TRUE or FALSE.")
+  }
   if (isTRUE(con$released)) {
     return(invisible(FALSE))
   }
@@ -211,6 +219,7 @@ check_server_version <- function(con) {
   version <- con$spark_version
   number <- numeric_version(sub("[^0-9.].*$", "", version), strict = FALSE)
   if (is.na(number) || number < "3.5.0") {
+    try(release_session(con, deadline = 5), silent = TRUE)
     close_connection(con)
     zuspark_abort(
       "zuspark_version_error",
