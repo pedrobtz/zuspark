@@ -66,6 +66,34 @@
   limits or that does not decompress is a `zuspark_protocol_error`;
   before, only malformed data was.
 
+- A connection, query or Spark error saved with
+  [`saveRDS()`](https://rdrr.io/r/base/readRDS.html) or sent to another
+  process (callr, future, mirai, targets) no longer carries the bearer
+  token: the gRPC channel stays in the R session that opened it (#26).
+
+- A statement whose result is complete is no longer reported as failed
+  when the release that follows it fails; a failed release could invite
+  running an `INSERT` twice (#27).
+
+- [`spark_config()`](https://pedrobtz.github.io/zuspark/reference/spark_config.md)
+  and
+  [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)’s
+  `...` send numbers in full: `100000` was sent as `1e+05`, which Spark
+  refuses. `NA` and non-finite values are refused (#28).
+
+- [`spark_error_details()`](https://pedrobtz.github.io/zuspark/reference/spark_error_details.md)
+  raises an error when the server no longer holds the details, instead
+  of returning a blank entry (#29).
+
+- Every invalid argument to
+  [`spark_connect()`](https://pedrobtz.github.io/zuspark/reference/spark_connect.md)
+  is a `zuspark_url_error` naming the part: `user_id`, `user_agent`,
+  `deadline`, header names and values, and keepalive and message sizes
+  (#30).
+
+- A connection-string value with an invalid percent-escape, and an empty
+  `token=`, are refused instead of being silently changed (#31).
+
 - A malformed connection string’s error never prints a token: the
   missing-host message redacts it, and a malformed parameter is named by
   its key only (#25).
