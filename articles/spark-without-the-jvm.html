@@ -110,7 +110,7 @@ finishes or fails.</p>
 <span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_sql.html">spark_sql</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"SELECT id, id % 7 AS weekday, rand(42) AS amount FROM range(1000000)"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_collect.html">spark_collect</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    user  system elapsed </span></span>
-<span><span class="co">#&gt;   0.191   0.051   0.698</span></span>
+<span><span class="co">#&gt;   0.283   0.042   0.965</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 1000000</span></span>
 <span><span class="va">q</span></span>
