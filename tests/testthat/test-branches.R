@@ -98,26 +98,40 @@ test_that("spark_execute() on a command returns its row count", {
 
 test_that("a result in more than 16 batches is kept whole", {
   # The query's first batch, repeated 20 times with running offsets, in
-  # place of the recorded batches.
+  # place of the recorded batches. More than 16 responses also means an
+  # inline release, which the recording has no call for, so this test
+  # answers the query and every release itself.
   decoded <- decode_stream_fixture("sql-query", 5)
   is_batch <- vapply(decoded, function(r) !is.null(r$arrow_batch), logical(1))
-  batch <- decoded[[which(is_batch)[[1L]]]]
+  first <- which(is_batch)[[1L]]
+  batch <- decoded[[first]]
   per_batch <- batch$arrow_batch$row_count
-  local_replay("sql-query", responses = list(`5` = function(messages) {
-    copies <- lapply(0:19, function(k) {
-      b <- batch
-      b$arrow_batch$start_offset <- per_batch * k
-      b$response_id <- sprintf("%s-%02d", batch$response_id, k)
-      encode_response(b, "ExecutePlan")
-    })
-    first <- which(is_batch)[[1L]]
-    c(messages[seq_len(first - 1L)], copies, messages[!is_batch & seq_along(messages) > first])
-  }))
+  recorded <- read_stream_fixture("sql-query", fixture_calls("sql-query")$stem[[5]])
+  copies <- lapply(0:19, function(k) {
+    b <- batch
+    b$arrow_batch$start_offset <- per_batch * k
+    b$response_id <- sprintf("%s-%02d", batch$response_id, k)
+    encode_response(b, "ExecutePlan")
+  })
+  messages <- c(recorded[seq_len(first - 1L)], copies, recorded[!is_batch & seq_along(recorded) > first])
+  release <- read_fixture("sql-query", fixture_calls("sql-query")$stem[[6]], "response")
+
+  local_replay("sql-query")
   con <- replay_connect("sql-query")
   q <- spark_sql(con, query_sql())
+  sent <- character()
+  con$transport <- function(con, method, bytes, deadline, streaming = FALSE) {
+    sent <<- c(sent, method)
+    switch(method,
+      ExecutePlan = replay_stream(messages),
+      ReleaseExecute = release
+    )
+  }
   df <- spark_collect(q)
   expect_identical(nrow(df), as.integer(20 * per_batch))
   expect_identical(q$rows, 20 * per_batch)
+  # One inline release after 16 responses, and the release at the end.
+  expect_identical(sent, c("ExecutePlan", "ReleaseExecute", "ReleaseExecute"))
 })
 
 test_that("observed metrics are kept on the query", {
