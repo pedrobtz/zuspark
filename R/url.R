@@ -12,7 +12,10 @@ spark_url_reserved <- c(
   "grpc_keepalive_timeout_ms", "grpc_keepalive_without_calls"
 )
 
-spark_url_example <- "Please update the URL to follow the correct format, e.g., 'sc://hostname:port'."
+# PySpark's wording, kept word for word (design §7.1): its four
+# INVALID_CONNECT_URL messages are the test cases, so restyling them would
+# break the parity they check.
+spark_url_hint <- "Please update the URL to follow the correct format, e.g., 'sc://hostname:port'."
 
 url_abort <- function(part, message) {
   zuspark_abort("zuspark_url_error", message, part = part)
@@ -22,13 +25,13 @@ url_abort <- function(part, message) {
 # zugrpc), tls, token, user_id, user_agent, session_id, max_message,
 # keepalive, headers and params (every parameter, as given).
 parse_spark_url <- function(url) {
-  if (!is.character(url) || length(url) != 1L || is.na(url)) {
+  if (!is_string(url, empty_ok = TRUE)) {
     url_abort("url", "The connection string must be a single string.")
   }
   if (substr(url, 1L, 5L) != "sc://") {
     url_abort(
       "scheme",
-      paste("The URL must start with 'sc://'.", spark_url_example)
+      paste("The URL must start with 'sc://'.", spark_url_hint)
     )
   }
   rest <- substr(url, 6L, nchar(url))
@@ -55,7 +58,7 @@ parse_spark_url <- function(url) {
   if (nzchar(path) && path != "/") {
     url_abort(
       "path",
-      sprintf("The path component '%s' must be empty. %s", path, spark_url_example)
+      sprintf("The path component '%s' must be empty. %s", path, spark_url_hint)
     )
   }
 
@@ -115,11 +118,11 @@ parse_authority <- function(authority, url) {
   authority <- sub("^.*@", "", authority)
   port <- NULL
   if (startsWith(authority, "[")) {
-    close <- regexpr("]", authority, fixed = TRUE)
-    host <- if (close > 0L) substr(authority, 2L, close - 1L) else ""
-    tail <- if (close > 0L) substr(authority, close + 1L, nchar(authority)) else ""
-    if (startsWith(tail, ":")) {
-      port <- substr(tail, 2L, nchar(tail))
+    close_bracket <- regexpr("]", authority, fixed = TRUE)
+    host <- if (close_bracket > 0L) substr(authority, 2L, close_bracket - 1L) else ""
+    port_text <- if (close_bracket > 0L) substr(authority, close_bracket + 1L, nchar(authority)) else ""
+    if (startsWith(port_text, ":")) {
+      port <- substr(port_text, 2L, nchar(port_text))
     }
   } else {
     colon <- regexpr(":", authority, fixed = TRUE)
@@ -133,7 +136,7 @@ parse_authority <- function(authority, url) {
   if (!nzchar(host)) {
     url_abort(
       "host",
-      sprintf("Hostname is missing in the URL: '%s'. %s", redact_url(url), spark_url_example)
+      sprintf("Hostname is missing in the URL: '%s'. %s", redact_url(url), spark_url_hint)
     )
   }
   host <- tolower(host)
@@ -146,7 +149,7 @@ parse_authority <- function(authority, url) {
   } else if (!grepl("^[0-9]+$", port) || as.numeric(port) > 65535) {
     url_abort(
       "port",
-      sprintf("The port '%s' is not a number from 0 to 65535. %s", port, spark_url_example)
+      sprintf("The port '%s' is not a number from 0 to 65535. %s", port, spark_url_hint)
     )
   } else {
     port <- as.integer(port)
@@ -217,8 +220,7 @@ url_number <- function(params, key, default) {
 uuid_pattern <- "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 
 check_session_id <- function(session_id) {
-  if (!is.character(session_id) || length(session_id) != 1L ||
-    is.na(session_id) || !grepl(uuid_pattern, session_id)) {
+  if (!is_string(session_id) || !grepl(uuid_pattern, session_id)) {
     url_abort(
       "session_id",
       sprintf("Parameter 'session_id' must be a UUID, not '%s'.", format(session_id))

@@ -104,6 +104,16 @@ replay_stream <- function(messages) {
 
 # With `exhaust = TRUE`, the test also fails unless every recorded call was
 # made by the time it ends (#50).
+# The fake channel's own error, when zuspark makes a call the scenario did
+# not record: classed, with the method asked for, so that a test can tell
+# it from zuspark's errors without reading its message.
+replay_mismatch <- function(message, method) {
+  structure(
+    class = c("zuspark_test_replay_mismatch", "error", "condition"),
+    list(message = message, call = NULL, method = method)
+  )
+}
+
 local_replay <- function(scenario, responses = list(), env = parent.frame(), exhaust = FALSE) {
   calls <- fixture_calls(scenario)
   state <- new.env(parent = emptyenv())
@@ -115,10 +125,10 @@ local_replay <- function(scenario, responses = list(), env = parent.frame(), exh
     n <- state$n + 1L
     state$n <- n
     if (n > nrow(calls)) {
-      stop(sprintf("Fixture '%s' has %d calls; call %d was %s.", scenario, nrow(calls), n, method))
+      stop(replay_mismatch(sprintf("Fixture '%s' has %d calls; call %d was %s.", scenario, nrow(calls), n, method), method))
     }
     if (calls$method[[n]] != method) {
-      stop(sprintf("Fixture '%s' call %d is %s, not %s.", scenario, n, calls$method[[n]], method))
+      stop(replay_mismatch(sprintf("Fixture '%s' call %d is %s, not %s.", scenario, n, calls$method[[n]], method), method))
     }
     state$methods <- c(state$methods, method)
     state$requests[[n]] <- zuproto::proto_decode(bytes, request_types[[method]], spark_pool())

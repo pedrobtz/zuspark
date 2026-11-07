@@ -242,7 +242,7 @@ arrow_protocol_error <- function(e, what) {
 }
 
 check_sql <- function(sql) {
-  if (!is.character(sql) || length(sql) != 1L || is.na(sql) || !nzchar(trimws(sql))) {
+  if (!is_string(sql)) {
     zuspark_abort("zuspark_error", "`sql` must be a single, non-empty string.")
   }
   invisible(sql)

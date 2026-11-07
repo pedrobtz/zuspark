@@ -18,37 +18,37 @@ as_zuspark_error <- function(e, con = NULL) {
     # An R interrupt during a call that is not a stream read (a schema, a
     # setting, connecting): the call was cancelled; only a stream read also
     # asks the server to stop the job (design §7.9, #33).
-    class <- "zuspark_interrupt_error"
+    cnd_class <- "zuspark_interrupt_error"
     message <- "Interrupted: the call was cancelled."
     fields <- list(interrupted_ids = character(), operation_id = NA_character_)
   } else if (!is.null(info) && identical(info$domain, "org.apache.spark")) {
     meta <- info$metadata %||% character()
-    get <- function(key) if (key %in% names(meta)) meta[[key]] else NA_character_
-    class <- "zuspark_sql_error"
+    meta_value <- function(key) if (key %in% names(meta)) meta[[key]] else NA_character_
+    cnd_class <- "zuspark_sql_error"
     message <- trimws(e$grpc_message %||% e$details$message %||% conditionMessage(e))
     fields <- list(
-      error_class = get("errorClass"),
-      sql_state = get("sqlState"),
-      message_parameters = parse_json_strings(get("messageParameters")),
-      classes = parse_json_strings(get("classes")),
-      error_id = get("errorId"),
+      error_class = meta_value("errorClass"),
+      sql_state = meta_value("sqlState"),
+      message_parameters = parse_json_strings(meta_value("messageParameters")),
+      classes = parse_json_strings(meta_value("classes")),
+      error_id = meta_value("errorId"),
       reason = info$reason %||% NA_character_
     )
   } else {
-    class <- "zuspark_rpc_error"
+    cnd_class <- "zuspark_rpc_error"
     message <- conditionMessage(e)
     fields <- list()
   }
   cnd <- errorCondition(
     message,
-    class = c(class, "zuspark_error", setdiff(class(e), c("error", "condition"))),
+    class = c(cnd_class, "zuspark_error", setdiff(class(e), c("error", "condition"))),
     call = NULL
   )
   cnd[names(fields)] <- fields
   cnd$grpc_status <- status
   cnd$parent <- e
   # So that spark_error_details(err) can ask the same session.
-  if (class == "zuspark_sql_error") cnd$con <- con
+  if (cnd_class == "zuspark_sql_error") cnd$con <- con
   cnd
 }
 
@@ -79,7 +79,10 @@ with_zuspark_errors <- function(expr, con = NULL) {
 #' @export
 #' @examplesIf nzchar(Sys.getenv("SPARK_REMOTE"))
 #' con <- spark_connect()
-#' err <- tryCatch(spark_sql(con, "SELECT * FROM no_such_table"), error = identity)
+#' err <- tryCatch(
+#'   spark_sql(con, "SELECT * FROM no_such_table"),
+#'   error = identity
+#' )
 #' err$error_class
 #' details <- spark_error_details(err)
 #' details[[1]]$message
@@ -126,35 +129,41 @@ spark_error_details <- function(err, con = err$con) {
     )
   }
   root <- response$root_error_idx %||% 0
-  order <- c(root, setdiff(seq_along(errors) - 1, root))
-  lapply(errors[order + 1], function(e) error_detail(e, order))
+  error_order <- c(root, setdiff(seq_along(errors) - 1, root))
+  lapply(errors[error_order + 1], function(e) error_detail(e, error_order))
 }
 
-error_detail <- function(e, order) {
-  t <- e$spark_throwable
+# `field` of every element of `xs`, as a vector of `type`; `default` where
+# an element has none.
+pluck <- function(xs, field, default, type) {
+  vapply(xs, function(x) as.vector(x[[field]] %||% default, mode = typeof(type)), type)
+}
+
+error_detail <- function(e, error_order) {
+  throwable <- e$spark_throwable
   stack <- e$stack_trace
-  contexts <- t$query_contexts
+  contexts <- throwable$query_contexts
   cause <- e$cause_idx
   list(
     type = unlist(e$error_type_hierarchy) %||% character(),
     message = e$message %||% "",
-    error_class = t$error_class %||% NA_character_,
-    sql_state = t$sql_state %||% NA_character_,
-    message_parameters = unlist(t$message_parameters) %||% character(),
-    cause = if (is.null(cause)) NA_integer_ else match(cause, order),
+    error_class = throwable$error_class %||% NA_character_,
+    sql_state = throwable$sql_state %||% NA_character_,
+    message_parameters = unlist(throwable$message_parameters) %||% character(),
+    cause = if (is.null(cause)) NA_integer_ else match(cause, error_order),
     stack = data.frame(
-      class = vapply(stack, function(s) s$declaring_class %||% "", character(1)),
-      method = vapply(stack, function(s) s$method_name %||% "", character(1)),
-      file = vapply(stack, function(s) s$file_name %||% NA_character_, character(1)),
-      line = vapply(stack, function(s) as.integer(s$line_number %||% NA), integer(1)),
+      class = pluck(stack, "declaring_class", "", character(1)),
+      method = pluck(stack, "method_name", "", character(1)),
+      file = pluck(stack, "file_name", NA_character_, character(1)),
+      line = pluck(stack, "line_number", NA_integer_, integer(1)),
       stringsAsFactors = FALSE
     ),
     contexts = data.frame(
-      object_type = vapply(contexts, function(q) q$object_type %||% "", character(1)),
-      object_name = vapply(contexts, function(q) q$object_name %||% "", character(1)),
-      start = vapply(contexts, function(q) as.integer(q$start_index %||% NA), integer(1)),
-      stop = vapply(contexts, function(q) as.integer(q$stop_index %||% NA), integer(1)),
-      fragment = vapply(contexts, function(q) q$fragment %||% "", character(1)),
+      object_type = pluck(contexts, "object_type", "", character(1)),
+      object_name = pluck(contexts, "object_name", "", character(1)),
+      start = pluck(contexts, "start_index", NA_integer_, integer(1)),
+      stop = pluck(contexts, "stop_index", NA_integer_, integer(1)),
+      fragment = pluck(contexts, "fragment", "", character(1)),
       stringsAsFactors = FALSE
     )
   )
@@ -163,6 +172,16 @@ error_detail <- function(e, order) {
 # A flat JSON array of strings, or an object of string values, as Spark
 # writes classes and messageParameters: a character vector, named for an
 # object. Anything else, or NA, gives character(0).
+# The four hex digits after the \u at position `i` of `chars`, as a number,
+# or NA when they are cut short or not hex.
+json_code_unit <- function(chars, i) {
+  hex <- chars[i + 1:4]
+  if (anyNA(hex) || !all(grepl("^[0-9A-Fa-f]$", hex))) {
+    return(NA_integer_)
+  }
+  strtoi(paste(hex, collapse = ""), 16L)
+}
+
 parse_json_strings <- function(json) {
   if (is.null(json) || is.na(json) || !nzchar(trimws(json))) {
     return(character())
@@ -182,9 +201,20 @@ parse_json_strings <- function(json) {
         ch <- switch(esc,
           n = "\n", t = "\t", r = "\r", b = "\b", f = "\f",
           u = {
-            hex <- paste(chars[i + 1:4], collapse = "")
+            code <- json_code_unit(chars, i)
             i <<- i + 4L
-            intToUtf8(strtoi(hex, 16L))
+            # A UTF-16 surrogate pair is one character: \ud83d\ude00.
+            if (!is.na(code) && code >= 0xD800 && code <= 0xDBFF &&
+              identical(chars[i + 1:2], c("\\", "u"))) {
+              low <- json_code_unit(chars, i + 2L)
+              if (!is.na(low) && low >= 0xDC00 && low <= 0xDFFF) {
+                code <- 0x10000 + (code - 0xD800) * 0x400 + (low - 0xDC00)
+                i <<- i + 6L
+              }
+            }
+            # An escape cut short, or a lone surrogate, is the replacement
+            # character rather than "NA".
+            if (is.na(code) || (code >= 0xD800 && code <= 0xDFFF)) "\ufffd" else intToUtf8(code)
           },
           esc
         )

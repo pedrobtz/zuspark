@@ -31,6 +31,7 @@ test_that("live: read, set, unset and restore settings", {
 test_that("live: a released session id is retired unless reconnects are allowed", {
   remote <- live_remote()
   con <- spark_connect(remote)
+  withr::defer(if (!isTRUE(con$released)) spark_disconnect(con))
   id <- spark_session_id(con)[["client"]]
   expect_true(spark_disconnect(con))
   # Spark answers INTERNAL with INVALID_HANDLE.SESSION_CLOSED.
@@ -38,10 +39,12 @@ test_that("live: a released session id is retired unless reconnects are allowed"
   expect_s3_class(err, "zuspark_sql_error")
   expect_identical(err$error_class, "INVALID_HANDLE.SESSION_CLOSED")
 
-  con <- spark_connect(remote)
-  id <- spark_session_id(con)[["client"]]
-  expect_true(spark_disconnect(con, allow_reconnect = TRUE))
+  con2 <- spark_connect(remote)
+  withr::defer(if (!isTRUE(con2$released)) spark_disconnect(con2))
+  id <- spark_session_id(con2)[["client"]]
+  expect_true(spark_disconnect(con2, allow_reconnect = TRUE))
   again <- spark_connect(remote, session_id = id)
+  withr::defer(if (!isTRUE(again$released)) spark_disconnect(again))
   expect_identical(spark_session_id(again)[["client"]], id)
   spark_disconnect(again)
 })

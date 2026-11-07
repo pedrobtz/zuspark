@@ -13,7 +13,8 @@
 #' @export
 #' @examplesIf nzchar(Sys.getenv("SPARK_REMOTE"))
 #' con <- spark_connect()
-#' spark_schema(spark_sql(con, "SELECT id, CAST(id AS DECIMAL(10, 2)) AS d FROM range(3)"))
+#' q <- spark_sql(con, "SELECT id, CAST(id AS DECIMAL(10, 2)) AS d FROM range(3)")
+#' spark_schema(q)
 #' spark_disconnect(con)
 spark_schema <- function(x) {
   check_query(x)
@@ -28,9 +29,10 @@ spark_schema <- function(x) {
   if (is.null(type)) {
     zuspark_abort("zuspark_protocol_error", "The server answered a schema request without a schema.")
   }
-  fields <- type$struct$fields
-  if (is.null(type$struct)) {
-    fields <- list(list(name = "value", data_type = type, nullable = TRUE))
+  fields <- if (is.null(type$struct)) {
+    list(list(name = "value", data_type = type, nullable = TRUE))
+  } else {
+    type$struct$fields
   }
   data.frame(
     name = vapply(fields, function(f) f$name %||% "", character(1)),
@@ -51,7 +53,7 @@ format_data_type <- function(type) {
     return("unknown")
   }
   kind <- kind[[1L]]
-  t <- type[[kind]]
+  spec <- type[[kind]]
   switch(kind,
     null = "void",
     binary = "binary",
@@ -62,37 +64,37 @@ format_data_type <- function(type) {
     long = "bigint",
     float = "float",
     double = "double",
-    decimal = sprintf("decimal(%d,%d)", as.integer(t$precision %||% 10), as.integer(t$scale %||% 0)),
+    decimal = sprintf("decimal(%d,%d)", as.integer(spec$precision %||% 10), as.integer(spec$scale %||% 0)),
     string = {
-      collation <- t$collation %||% ""
+      collation <- spec$collation %||% ""
       if (nzchar(collation) && collation != "UTF8_BINARY") {
         sprintf("string collate %s", collation)
       } else {
         "string"
       }
     },
-    char = sprintf("char(%d)", as.integer(t$length %||% 1)),
-    var_char = sprintf("varchar(%d)", as.integer(t$length %||% 1)),
+    char = sprintf("char(%d)", as.integer(spec$length %||% 1)),
+    var_char = sprintf("varchar(%d)", as.integer(spec$length %||% 1)),
     date = "date",
     timestamp = "timestamp",
     timestamp_ntz = "timestamp_ntz",
-    time = sprintf("time(%d)", as.integer(t$precision %||% 6)),
+    time = sprintf("time(%d)", as.integer(spec$precision %||% 6)),
     calendar_interval = "interval",
-    year_month_interval = interval_ddl(t, year_month_fields, 0L, 1L),
-    day_time_interval = interval_ddl(t, day_time_fields, 0L, 3L),
-    array = sprintf("array<%s>", format_data_type(t$element_type)),
-    map = sprintf("map<%s,%s>", format_data_type(t$key_type), format_data_type(t$value_type)),
-    struct = sprintf(
-      "struct<%s>",
-      paste(vapply(t$fields, function(f) {
+    year_month_interval = interval_ddl(spec, year_month_fields, 0L, 1L),
+    day_time_interval = interval_ddl(spec, day_time_fields, 0L, 3L),
+    array = sprintf("array<%s>", format_data_type(spec$element_type)),
+    map = sprintf("map<%s,%s>", format_data_type(spec$key_type), format_data_type(spec$value_type)),
+    struct = {
+      members <- vapply(spec$fields, function(f) {
         paste0(f$name, ":", format_data_type(f$data_type))
-      }, character(1)), collapse = ",")
-    ),
+      }, character(1))
+      sprintf("struct<%s>", paste(members, collapse = ","))
+    },
     variant = "variant",
-    udt = if (!is.null(t$sql_type)) format_data_type(t$sql_type) else "udt",
-    geometry = sprintf("geometry(%d)", as.integer(t$srid %||% 0)),
-    geography = sprintf("geography(%d)", as.integer(t$srid %||% 4326)),
-    unparsed = t$data_type_string %||% "unknown",
+    udt = if (!is.null(spec$sql_type)) format_data_type(spec$sql_type) else "udt",
+    geometry = sprintf("geometry(%d)", as.integer(spec$srid %||% 0)),
+    geography = sprintf("geography(%d)", as.integer(spec$srid %||% 4326)),
+    unparsed = spec$data_type_string %||% "unknown",
     "unknown"
   )
 }
@@ -105,9 +107,15 @@ data_type_kinds <- c(
   "geometry", "geography", "unparsed", "time"
 )
 
-interval_ddl <- function(t, names, default_start, default_end) {
-  start <- as.integer(t$start_field %||% default_start)
-  end <- as.integer(t$end_field %||% default_end)
+interval_ddl <- function(spec, names, default_start, default_end) {
+  start <- as.integer(spec$start_field %||% default_start)
+  end <- as.integer(spec$end_field %||% default_end)
+  if (anyNA(c(start, end)) || min(start, end) < 0L || max(start, end) >= length(names)) {
+    zuspark_abort(
+      "zuspark_protocol_error",
+      sprintf("The server sent an interval type with fields %s to %s.", start, end)
+    )
+  }
   if (start == end) {
     return(sprintf("interval %s", names[[start + 1L]]))
   }

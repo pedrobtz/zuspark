@@ -14,9 +14,11 @@
 #'   defaults to the `SPARK_REMOTE` environment variable. The default port
 #'   is 15002. The reserved parameters are `token` (a bearer token; it
 #'   turns TLS on, except to `localhost` without `use_ssl`), `use_ssl`,
-#'   `user_id`, `user_agent`, `session_id`, `grpc_max_message_size` and
-#'   `grpc_keepalive_enabled`, `_time_ms` and `_timeout_ms`. Every other
-#'   parameter is sent as a header on every call.
+#'   `user_id`, `user_agent`, `session_id`, `grpc_max_message_size`,
+#'   `grpc_keepalive_enabled`, `grpc_keepalive_time_ms`,
+#'   `grpc_keepalive_timeout_ms` and `grpc_keepalive_without_calls`
+#'   (accepted and ignored, as PySpark does). Every other parameter is sent
+#'   as a header on every call.
 #' @param ... Named parameters appended to `url`, such as `token = "..."`.
 #' @param user_id,session_id,user_agent The user id sent with every call
 #'   (by default the `user_id` parameter, then `SPARK_USER`, then `USER`),
@@ -41,7 +43,7 @@ spark_connect <- function(url = Sys.getenv("SPARK_REMOTE"), ...,
                           user_id = NULL, session_id = NULL,
                           user_agent = NULL, headers = NULL,
                           deadline = NULL) {
-  if (!is.character(url) || length(url) != 1L || is.na(url) || !nzchar(url)) {
+  if (!is_string(url)) {
     url_abort(
       "url",
       "No connection string: pass `url`, or set SPARK_REMOTE, such as 'sc://localhost:15002'."
@@ -155,7 +157,11 @@ spark_session_id <- function(con) {
 
 #' @export
 print.zuspark_connection <- function(x, ...) {
-  state <- if (isTRUE(x$released)) "released" else paste("Spark", x$spark_version %||% "?")
+  state <- if (isTRUE(x$released)) {
+    "released"
+  } else {
+    paste("Spark", x$spark_version %||% "?")
+  }
   cat(sprintf("<zuspark_connection> %s (%s)\n", x$url, state))
   cat(sprintf("  session: %s\n", x$session_id))
   invisible(x)
@@ -318,6 +324,7 @@ client_type <- function(user_agent = NULL) {
     zuspark_abort(
       "zuspark_url_error",
       sprintf(
+        # PySpark's wording, hence the quotes rather than backticks.
         "'user_agent' must not exceed 2048 characters after URL escaping; it has %d.",
         encoded
       ),
@@ -363,13 +370,13 @@ append_url_params <- function(url, params) {
     }
     text
   }, character(1))
-  tail <- paste0(";", keys, "=", vapply(values, utils::URLencode, "", reserved = TRUE), collapse = "")
+  params_tail <- paste0(";", keys, "=", vapply(values, utils::URLencode, "", reserved = TRUE), collapse = "")
   # Parameters follow the path's ';'; a URL without a path gets "/".
   authority_end <- regexpr("/", substr(url, 6L, nchar(url)), fixed = TRUE)
   if (authority_end < 0L) {
     url <- paste0(url, "/")
   }
-  paste0(url, tail)
+  paste0(url, params_tail)
 }
 
 # The headers sent on every call: the string's unreserved parameters, then
@@ -404,7 +411,7 @@ check_header_text <- function(headers) {
 
 # NULL, or a single non-empty string.
 check_text_arg <- function(x, name) {
-  if (!is.null(x) && (!is.character(x) || length(x) != 1L || is.na(x) || !nzchar(x))) {
+  if (!is.null(x) && !is_string(x)) {
     url_abort(name, sprintf("`%s` must be NULL or a single non-empty string.", name))
   }
   invisible(x)

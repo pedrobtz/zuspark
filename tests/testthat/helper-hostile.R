@@ -41,7 +41,7 @@ expect_zuspark_outcome <- function(x, label) {
   lossy <- inherits(x, "zuarrow_lossy_error")
   # A valid stream that stops before ResultComplete: zuspark reattaches,
   # which the recorded scenario has no answer for.
-  reattach <- inherits(x, "simpleError") && grepl("not ReattachExecute", conditionMessage(x), fixed = TRUE)
+  reattach <- inherits(x, "zuspark_test_replay_mismatch") && identical(x$method, "ReattachExecute")
   if (inherits(x, "condition") && !inherits(x, "zuspark_error") && !lossy && !reattach) {
     fail(sprintf("%s: %s: %s", label, paste(class(x), collapse = "/"), conditionMessage(x)))
   } else {
