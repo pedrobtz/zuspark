@@ -98,13 +98,18 @@ spark_execute <- function(con, sql) {
 spark_collect <- function(x, lossy = "error", to = NULL) {
   check_query(x)
   fetched <- fetch_batches(x)
-  df <- arrow_call(zuarrow::arrow_to_r(read_batches(fetched$batches), to = to, lossy = lossy))
+  df <- arrow_call(zuarrow::arrow_to_r(
+    read_batches(fetched$batches),
+    to = to,
+    lossy = lossy
+  ))
   if (nrow(df) != fetched$rows) {
     zuspark_abort(
       "zuspark_protocol_error",
       sprintf(
         "The server counted %s rows, but its batches hold %s.",
-        format(fetched$rows), format(nrow(df))
+        format(fetched$rows),
+        format(nrow(df))
       )
     )
   }
@@ -120,17 +125,29 @@ spark_fetch <- function(x) {
 
 #' @rdname spark_collect
 #' @export
-as.data.frame.zuspark_query <- function(x, row.names = NULL, optional = FALSE, ...,
-                                        lossy = "error", to = NULL) {
+as.data.frame.zuspark_query <- function(
+  x,
+  row.names = NULL,
+  optional = FALSE,
+  ...,
+  lossy = "error",
+  to = NULL
+) {
   spark_collect(x, lossy = lossy, to = to)
 }
 
 #' @export
 print.zuspark_query <- function(x, ...) {
   sql <- gsub("\\s+", " ", x$sql)
-  if (nchar(sql) > 70L) sql <- paste0(substr(sql, 1L, 67L), "...")
+  if (nchar(sql) > 70L) {
+    sql <- paste0(substr(sql, 1L, 67L), "...")
+  }
   cat(sprintf("<zuspark_query> %s\n", sql))
-  runs <- if (is.null(x$rows)) "not run yet" else sprintf("last run: %s rows", format(x$rows))
+  runs <- if (is.null(x$rows)) {
+    "not run yet"
+  } else {
+    sprintf("last run: %s rows", format(x$rows))
+  }
   cat(sprintf("  on %s (%s)\n", x$con$url, runs))
   invisible(x)
 }
@@ -139,10 +156,14 @@ print.zuspark_query <- function(x, ...) {
 # Spark 4, which prefers it, and the deprecated `sql` for Spark 3.5, which
 # has no `input` and ignores the unknown field.
 sql_command_plan <- function(sql) {
-  list(command = list(sql_command = list(
-    sql = sql,
-    input = list(sql = list(query = sql))
-  )))
+  list(
+    command = list(
+      sql_command = list(
+        sql = sql,
+        input = list(sql = list(query = sql))
+      )
+    )
+  )
 }
 
 # A query is an environment, so that the metrics of its last execution are
@@ -182,17 +203,25 @@ fetch_batches <- function(x) {
     if (!is.null(offset) && offset != rows) {
       zuspark_abort(
         "zuspark_protocol_error",
-        sprintf("A batch starts at row %s, but %s rows came before it.", format(offset), format(rows))
+        sprintf(
+          "A batch starts at row %s, but %s rows came before it.",
+          format(offset),
+          format(rows)
+        )
       )
     }
     rows <<- rows + (batch$row_count %||% 0)
     n <<- n + 1L
-    if (n > length(batches)) length(batches) <<- 2L * length(batches)
+    if (n > length(batches)) {
+      length(batches) <<- 2L * length(batches)
+    }
     batches[[n]] <<- batch$data %||% raw()
   }
   run <- execute_plan(
-    x$con, list(root = x$relation),
-    on_response = keep_batch, on_operation = keep_operation
+    x$con,
+    list(root = x$relation),
+    on_response = keep_batch,
+    on_operation = keep_operation
   )
   x$rows <- rows
   x$metrics <- run$metrics
@@ -228,8 +257,12 @@ arrow_call <- function(expr) {
   tryCatch(
     expr,
     zuarrow_format_error = function(e) arrow_protocol_error(e, "is malformed"),
-    zuarrow_limit_error = function(e) arrow_protocol_error(e, "is over zuarrow's limits"),
-    zuarrow_codec_error = function(e) arrow_protocol_error(e, "does not decompress")
+    zuarrow_limit_error = function(e) {
+      arrow_protocol_error(e, "is over zuarrow's limits")
+    },
+    zuarrow_codec_error = function(e) {
+      arrow_protocol_error(e, "does not decompress")
+    }
   )
 }
 

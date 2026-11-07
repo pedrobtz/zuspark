@@ -11,23 +11,41 @@
 
 spark_service <- "/spark.connect.SparkConnectService/"
 
-spark_rpc <- function(con, method, request, request_type, response_type,
-                      deadline = con$deadline) {
+spark_rpc <- function(
+  con,
+  method,
+  request,
+  request_type,
+  response_type,
+  deadline = con$deadline
+) {
   pool <- spark_pool()
   bytes <- zuproto::proto_encode(request, request_type, pool)
   # Bound when the connection was made, so a finalizer that runs later
   # uses the same transport.
-  response <- with_zuspark_errors(con$transport(con, method, bytes, deadline, streaming = FALSE), con)
+  response <- with_zuspark_errors(
+    con$transport(con, method, bytes, deadline, streaming = FALSE),
+    con
+  )
   record_rpc(method, bytes, list(response))
   decode_response(response, response_type)
 }
 
 # A server-streaming call: returns a list of `next_response`, which returns
 # the next decoded response or NULL at the end, and `cancel`.
-spark_stream <- function(con, method, request, request_type, response_type,
-                         deadline = NULL) {
+spark_stream <- function(
+  con,
+  method,
+  request,
+  request_type,
+  response_type,
+  deadline = NULL
+) {
   bytes <- zuproto::proto_encode(request, request_type, spark_pool())
-  stream <- with_zuspark_errors(con$transport(con, method, bytes, deadline, streaming = TRUE), con)
+  stream <- with_zuspark_errors(
+    con$transport(con, method, bytes, deadline, streaming = TRUE),
+    con
+  )
   recorder <- stream_recorder(method, bytes)
   list(
     next_response = function() {
@@ -45,7 +63,10 @@ decode_response <- function(bytes, type) {
     zuproto_error = function(e) {
       zuspark_abort(
         "zuspark_protocol_error",
-        sprintf("The server sent a %s that does not decode.", sub("^spark\\.connect\\.", "", type)),
+        sprintf(
+          "The server sent a %s that does not decode.",
+          sub("^spark\\.connect\\.", "", type)
+        ),
         parent = e
       )
     }
@@ -55,9 +76,21 @@ decode_response <- function(bytes, type) {
 grpc_transport <- function(con, method, bytes, deadline, streaming = FALSE) {
   path <- paste0(spark_service, method)
   if (!streaming) {
-    return(zugrpc::grpc_call(connection_channel(con), path, bytes, deadline = deadline)$message)
+    return(
+      zugrpc::grpc_call(
+        connection_channel(con),
+        path,
+        bytes,
+        deadline = deadline
+      )$message
+    )
   }
-  stream <- zugrpc::grpc_stream(connection_channel(con), path, bytes, deadline = deadline)
+  stream <- zugrpc::grpc_stream(
+    connection_channel(con),
+    path,
+    bytes,
+    deadline = deadline
+  )
   list(next_message = stream$next_message, cancel = stream$cancel)
 }
 

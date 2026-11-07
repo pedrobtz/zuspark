@@ -23,9 +23,13 @@ as_zuspark_error <- function(e, con = NULL) {
     fields <- list(interrupted_ids = character(), operation_id = NA_character_)
   } else if (!is.null(info) && identical(info$domain, "org.apache.spark")) {
     meta <- info$metadata %||% character()
-    meta_value <- function(key) if (key %in% names(meta)) meta[[key]] else NA_character_
+    meta_value <- function(key) {
+      if (key %in% names(meta)) meta[[key]] else NA_character_
+    }
     cnd_class <- "zuspark_sql_error"
-    message <- trimws(e$grpc_message %||% e$details$message %||% conditionMessage(e))
+    message <- trimws(
+      e$grpc_message %||% e$details$message %||% conditionMessage(e)
+    )
     fields <- list(
       error_class = meta_value("errorClass"),
       sql_state = meta_value("sqlState"),
@@ -41,14 +45,20 @@ as_zuspark_error <- function(e, con = NULL) {
   }
   cnd <- errorCondition(
     message,
-    class = c(cnd_class, "zuspark_error", setdiff(class(e), c("error", "condition"))),
+    class = c(
+      cnd_class,
+      "zuspark_error",
+      setdiff(class(e), c("error", "condition"))
+    ),
     call = NULL
   )
   cnd[names(fields)] <- fields
   cnd$grpc_status <- status
   cnd$parent <- e
   # So that spark_error_details(err) can ask the same session.
-  if (cnd_class == "zuspark_sql_error") cnd$con <- con
+  if (cnd_class == "zuspark_sql_error") {
+    cnd$con <- con
+  }
   cnd
 }
 
@@ -101,8 +111,11 @@ spark_error_details <- function(err, con = err$con) {
   request <- c(session_fields(con), list(error_id = err$error_id))
   response <- tryCatch(
     spark_rpc(
-      con, "FetchErrorDetails", request,
-      "spark.connect.FetchErrorDetailsRequest", "spark.connect.FetchErrorDetailsResponse"
+      con,
+      "FetchErrorDetails",
+      request,
+      "spark.connect.FetchErrorDetailsRequest",
+      "spark.connect.FetchErrorDetailsResponse"
     ),
     # Spark 3.5 has no FetchErrorDetails (design §7.2).
     zugrpc_error_unimplemented = function(e) {
@@ -136,7 +149,11 @@ spark_error_details <- function(err, con = err$con) {
 # `field` of every element of `xs`, as a vector of `type`; `default` where
 # an element has none.
 pluck <- function(xs, field, default, type) {
-  vapply(xs, function(x) as.vector(x[[field]] %||% default, mode = typeof(type)), type)
+  vapply(
+    xs,
+    function(x) as.vector(x[[field]] %||% default, mode = typeof(type)),
+    type
+  )
 }
 
 error_detail <- function(e, error_order) {
@@ -198,14 +215,23 @@ parse_json_strings <- function(json) {
       if (ch == "\\" && i < n) {
         i <<- i + 1L
         esc <- chars[[i]]
-        ch <- switch(esc,
-          n = "\n", t = "\t", r = "\r", b = "\b", f = "\f",
+        ch <- switch(
+          esc,
+          n = "\n",
+          t = "\t",
+          r = "\r",
+          b = "\b",
+          f = "\f",
           u = {
             code <- json_code_unit(chars, i)
             i <<- i + 4L
             # A UTF-16 surrogate pair is one character: \ud83d\ude00.
-            if (!is.na(code) && code >= 0xD800 && code <= 0xDBFF &&
-              identical(chars[i + 1:2], c("\\", "u"))) {
+            if (
+              !is.na(code) &&
+                code >= 0xD800 &&
+                code <= 0xDBFF &&
+                identical(chars[i + 1:2], c("\\", "u"))
+            ) {
               low <- json_code_unit(chars, i + 2L)
               if (!is.na(low) && low >= 0xDC00 && low <= 0xDFFF) {
                 code <- 0x10000 + (code - 0xD800) * 0x400 + (low - 0xDC00)
@@ -214,7 +240,11 @@ parse_json_strings <- function(json) {
             }
             # An escape cut short, or a lone surrogate, is the replacement
             # character rather than "NA".
-            if (is.na(code) || (code >= 0xD800 && code <= 0xDFFF)) "\ufffd" else intToUtf8(code)
+            if (is.na(code) || (code >= 0xD800 && code <= 0xDFFF)) {
+              "\ufffd"
+            } else {
+              intToUtf8(code)
+            }
           },
           esc
         )
