@@ -354,3 +354,31 @@ test_that("every response path checks the session", {
   expect_error(spark_collect(q), class = "zuspark_session_error")
   close_connection(con)
 })
+
+test_that("printed connection strings redact credentials and user information", {
+  expect_identical(redact_url("sc://h:443/;token=abc;use_ssl=true"), "sc://h:443/;token=<redacted>;use_ssl=true")
+  expect_identical(
+    redact_url("sc://h/;authorization=Bearer%20xyz;x-api-key=k1;user_id=me"),
+    "sc://h/;authorization=<redacted>;x-api-key=<redacted>;user_id=me"
+  )
+  expect_identical(redact_url("sc://user:pw@h:15002/;token=t"), "sc://h:15002/;token=<redacted>")
+  expect_identical(redact_url("sc://h:15002"), "sc://h:15002")
+})
+
+test_that("a connect that fails after Config releases the session it made", {
+  # Call 2 (SparkVersion) fails; call 3 of `connect` is its ReleaseSession.
+  calls <- local_replay("connect", responses = list(`2` = function(bytes) {
+    stop(grpc_status_condition("UNAVAILABLE", "connection reset"))
+  }))
+  expect_error(replay_connect("connect"), class = "zugrpc_error_unavailable")
+  expect_identical(calls$methods, c("Config", "AnalyzePlan", "ReleaseSession"))
+})
+
+test_that("allow_reconnect must be TRUE or FALSE", {
+  local_replay("connect")
+  con <- replay_connect("connect")
+  for (bad in list("yes", NA, c(TRUE, FALSE), 1)) {
+    expect_error(spark_disconnect(con, allow_reconnect = bad), class = "zuspark_error")
+  }
+  expect_true(spark_disconnect(con))
+})
