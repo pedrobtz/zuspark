@@ -29,6 +29,11 @@ Run statements and read their results.
 - [`spark_schema()`](https://pedrobtz.github.io/zuspark/reference/spark_schema.md)
   : A query's schema
 
+## DBI and dbplyr
+
+- [`spark_driver()`](https://pedrobtz.github.io/zuspark/reference/spark_driver.md)
+  : A DBI driver for Spark Connect
+
 ## Errors and interrupts
 
 - [`spark_error_details()`](https://pedrobtz.github.io/zuspark/reference/spark_error_details.md)

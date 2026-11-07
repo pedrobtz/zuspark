@@ -70,6 +70,8 @@
 <li>
 <strong>Results that survive a cut.</strong> Long results are read with reattachable execution: a stream cut by a proxy or a timeout resumes where it stopped, and the server’s buffer is released as the rows are read.</li>
 <li>
+<strong>dplyr on Spark.</strong> With DBI and dbplyr installed, a session is a DBI connection: <code><a href="https://dplyr.tidyverse.org/reference/tbl.html" class="external-link">tbl()</a></code> and dplyr verbs become Spark SQL, run on the cluster, and only <code><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect()</a></code> brings rows back.</li>
+<li>
 <strong>Databricks too.</strong> <code><a href="reference/spark_connect_databricks.html">spark_connect_databricks()</a></code> connects to a workspace’s serverless compute or to a cluster.</li>
 </ul>
 <div class="section level2">
@@ -126,6 +128,27 @@
 <span><span class="co">#&gt; [1] "42P01"</span></span></code></pre></div>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/spark_connect.html">spark_disconnect</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></code></pre></div>
+<p>With DBI and dbplyr, the same session works with dplyr. The pipeline below is translated to one Spark SQL query by dbplyr’s own Spark backend; Spark summarises a million rows and sends back seven.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span>, warn.conflicts <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">db</span> <span class="op">&lt;-</span> <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbConnect.html" class="external-link">dbConnect</a></span><span class="op">(</span><span class="fu"><a href="reference/spark_driver.html">spark_driver</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"sc://localhost:15002"</span><span class="op">)</span></span>
+<span><span class="va">trips</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/tbl.html" class="external-link">tbl</a></span><span class="op">(</span><span class="va">db</span>, <span class="fu"><a href="https://dplyr.tidyverse.org/reference/sql.html" class="external-link">sql</a></span><span class="op">(</span><span class="st">"SELECT id % 7 AS weekday, rand(1) * 30 AS minutes FROM range(1000000)"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">trips</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">weekday</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>trips <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>, minutes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">minutes</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">weekday</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; # A tibble: 7 × 3</span></span>
+<span><span class="co">#&gt;   weekday  trips minutes</span></span>
+<span><span class="co">#&gt;     &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;</span></span>
+<span><span class="co">#&gt; 1       0 142858    15.0</span></span>
+<span><span class="co">#&gt; 2       1 142857    15.0</span></span>
+<span><span class="co">#&gt; 3       2 142857    15.0</span></span>
+<span><span class="co">#&gt; 4       3 142857    15.0</span></span>
+<span><span class="co">#&gt; 5       4 142857    15.0</span></span>
+<span><span class="co">#&gt; 6       5 142857    15.0</span></span>
+<span><span class="co">#&gt; 7       6 142857    15.0</span></span>
+<span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbDisconnect.html" class="external-link">dbDisconnect</a></span><span class="op">(</span><span class="va">db</span><span class="op">)</span></span></code></pre></div>
 <p>Every function but <code><a href="reference/zuspark_info.html">zuspark_info()</a></code> starts with <code>spark_</code>, and every one after <code><a href="reference/spark_connect.html">spark_connect()</a></code> takes the connection, a query or an error first.</p>
 </div>
 <div class="section level2">

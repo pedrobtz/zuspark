@@ -92,6 +92,8 @@
 <li>
 <a href="R/execute.R">R/execute.R</a>: <code>execute_plan()</code> runs one ExecutePlan with reattachable execution: the reattach loop, inline releases every 16 responses, release-all on completion or abandonment, and the per-response checks. <a href="R/sql.R">R/sql.R</a> builds the user verbs on it.</li>
 <li>
+<a href="R/dbi.R">R/dbi.R</a>: <code><a href="reference/spark_driver.html">spark_driver()</a></code> and the DBI driver; dbplyr’s own ‘Spark SQL’ methods registered for its connection (design D5, amended).</li>
+<li>
 <a href="R/databricks.R">R/databricks.R</a>: <code><a href="reference/spark_connect_databricks.html">spark_connect_databricks()</a></code>, the connection string and compute header Databricks needs.</li>
 <li>
 <a href="R/url.R">R/url.R</a> parses <code>sc://</code> strings; <a href="R/session.R">R/session.R</a> holds the connection, an environment of class <code>zuspark_connection</code>, so the server-side id and the released flag are shared by every copy; <a href="R/config.R">R/config.R</a> is <code><a href="reference/spark_config.html">spark_config()</a></code>.</li>
@@ -109,6 +111,8 @@
 <strong>Every request goes through <code>session_fields()</code></strong>, which carries the session id, user context and client type, and refuses a released connection; every response goes through <code>observe_session()</code>. A new RPC that skips either loses the session checks of design §7.2.</li>
 <li>
 <strong>A new execution path goes through <code>execute_plan()</code>.</strong> It is what releases the server’s buffer; an ExecutePlan that bypasses it leaves the result in the server’s memory until the session dies.</li>
+<li>
+<strong>No S4 definition at the top level of <code>R/</code>.</strong> DBI and dbplyr are Suggests: <code>register_dbi()</code> defines the classes and methods in <code>.onLoad()</code>, or from a load hook, only when DBI is installed. A top-level <code>setClass()</code> or <code>setMethod()</code> would need DBI at install time and freeze its absence into the build.</li>
 <li>
 <strong>The channel is never stored on the connection.</strong> It lives in the namespace’s <code>channels</code> registry, reached by <code>connection_channel(con)</code>: its headers hold the bearer token, and connections travel inside queries and errors that users save or send to other processes (#26).</li>
 <li>

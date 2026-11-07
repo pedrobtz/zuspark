@@ -24,6 +24,20 @@
   streams are reattached, every row arriving once, and consumed results
   are released as they are read.
 
+- [`spark_driver()`](https://pedrobtz.github.io/zuspark/reference/spark_driver.md)
+  makes a Spark Connect session a DBI connection, with
+  `DBI::dbConnect(spark_driver(), url)`, so that
+  [`dbGetQuery()`](https://dbi.r-dbi.org/reference/dbGetQuery.html),
+  [`dbListTables()`](https://dbi.r-dbi.org/reference/dbListTables.html),
+  [`dbWriteTable()`](https://dbi.r-dbi.org/reference/dbWriteTable.html)
+  and the rest work, and dbplyr translates `dplyr` pipelines to Spark
+  SQL with its own Spark backend:
+  [`tbl()`](https://dplyr.tidyverse.org/reference/tbl.html),
+  [`collect()`](https://dplyr.tidyverse.org/reference/compute.html),
+  [`copy_to()`](https://dplyr.tidyverse.org/reference/copy_to.html) and
+  [`compute()`](https://dplyr.tidyverse.org/reference/compute.html).
+  DBI, dbplyr and dplyr are optional.
+
 - [`spark_schema()`](https://pedrobtz.github.io/zuspark/reference/spark_schema.md)
   gives a query’s schema, as Spark’s types, without running it.
 

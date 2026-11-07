@@ -84,7 +84,7 @@ article runs against one.</p>
 <code class="sourceCode R"><span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/spark_connect.html">spark_connect</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">con</span></span>
 <span><span class="co">#&gt; &lt;zuspark_connection&gt; sc://127.0.0.1:15002 (Spark 4.2.1)</span></span>
-<span><span class="co">#&gt;   session: 2b3b5555-e950-4ec8-b0b8-1f5d473f6223</span></span>
+<span><span class="co">#&gt;   session: 421fa406-bb6d-4965-a2d7-408785ab70cf</span></span>
 <span><span class="fu"><a href="../reference/spark_version.html">spark_version</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "4.2.1"</span></span></code></pre></div>
 <p>Parameters go after a <code>;</code>. <code>token</code> sends a
@@ -211,6 +211,42 @@ Esc) while a query runs stops it on the server;
 <span><span class="co">#&gt;                      "UTC"</span></span>
 <span><span class="fu"><a href="../reference/spark_interrupt.html">spark_interrupt</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/spark_connect.html">spark_disconnect</a></span><span class="op">(</span><span class="va">con</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="dbi-and-dplyr">DBI and dplyr<a class="anchor" aria-label="anchor" href="#dbi-and-dplyr"></a>
+</h2>
+<p>With the DBI package installed, <code><a href="../reference/spark_driver.html">spark_driver()</a></code> makes a
+session a DBI connection; with dbplyr too, dplyr pipelines run on Spark
+as Spark SQL. <code><a href="https://dbi.r-dbi.org/reference/dbWriteTable.html" class="external-link">dbWriteTable()</a></code> and <code><a href="https://dplyr.tidyverse.org/reference/copy_to.html" class="external-link">copy_to()</a></code>
+send small tables as SQL values, and a temporary table is a view of the
+session.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span>, warn.conflicts <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">db</span> <span class="op">&lt;-</span> <span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbConnect.html" class="external-link">dbConnect</a></span><span class="op">(</span><span class="fu"><a href="../reference/spark_driver.html">spark_driver</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">sales</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/copy_to.html" class="external-link">copy_to</a></span><span class="op">(</span><span class="va">db</span>, <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>day <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="fl">4</span><span class="op">)</span>, amount <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span>, <span class="st">"sales"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">summary</span> <span class="op">&lt;-</span> <span class="va">sales</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">amount</span> <span class="op">&gt;</span> <span class="fl">2</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">day</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>, total <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">amount</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/explain.html" class="external-link">show_query</a></span><span class="op">(</span><span class="va">summary</span><span class="op">)</span></span>
+<span><span class="co">#&gt; &lt;SQL&gt;</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">SELECT</span> `day`, COUNT(*)<span style="color: #0000BB;"> AS </span>`n`, SUM(`amount`)<span style="color: #0000BB;"> AS </span>`total`</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">FROM</span> `sales`</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">WHERE</span> (`amount` &gt; 2.0)</span></span>
+<span><span class="co">#&gt; <span style="color: #0000BB;">GROUP BY</span> `day`</span></span>
+<span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/compute.html" class="external-link">collect</a></span><span class="op">(</span><span class="va">summary</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 3</span></span></span>
+<span><span class="co">#&gt;     day     n total</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>     1     3    21</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>     3     4    30</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>     2     3    24</span></span>
+<span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbListTables.html" class="external-link">dbListTables</a></span><span class="op">(</span><span class="va">db</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "sales"</span></span>
+<span><span class="fu">DBI</span><span class="fu">::</span><span class="fu"><a href="https://dbi.r-dbi.org/reference/dbDisconnect.html" class="external-link">dbDisconnect</a></span><span class="op">(</span><span class="va">db</span><span class="op">)</span></span></code></pre></div>
+<p><code>dbConnect(spark_driver(), con = con)</code> wraps a connection
+you already have, such as one from
+<code><a href="../reference/spark_connect_databricks.html">spark_connect_databricks()</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="next">Next<a class="anchor" aria-label="anchor" href="#next"></a>

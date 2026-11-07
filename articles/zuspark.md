@@ -23,7 +23,7 @@ listens on port 15002; this article runs against one.
 con <- spark_connect()
 con
 #> <zuspark_connection> sc://127.0.0.1:15002 (Spark 4.2.1)
-#>   session: 2b3b5555-e950-4ec8-b0b8-1f5d473f6223
+#>   session: 421fa406-bb6d-4965-a2d7-408785ab70cf
 spark_version(con)
 #> [1] "4.2.1"
 ```
@@ -190,6 +190,48 @@ spark_config(con, "spark.sql.session.timeZone")
 spark_interrupt(con)
 spark_disconnect(con)
 ```
+
+## DBI and dplyr
+
+With the DBI package installed,
+[`spark_driver()`](https://pedrobtz.github.io/zuspark/reference/spark_driver.md)
+makes a session a DBI connection; with dbplyr too, dplyr pipelines run
+on Spark as Spark SQL.
+[`dbWriteTable()`](https://dbi.r-dbi.org/reference/dbWriteTable.html)
+and [`copy_to()`](https://dplyr.tidyverse.org/reference/copy_to.html)
+send small tables as SQL values, and a temporary table is a view of the
+session.
+
+``` r
+
+library(dplyr, warn.conflicts = FALSE)
+db <- DBI::dbConnect(spark_driver())
+sales <- copy_to(db, data.frame(day = rep(1:3, 4), amount = 1:12), "sales", overwrite = TRUE)
+summary <- sales |>
+  filter(amount > 2) |>
+  group_by(day) |>
+  summarise(n = n(), total = sum(amount, na.rm = TRUE))
+show_query(summary)
+#> <SQL>
+#> SELECT `day`, COUNT(*) AS `n`, SUM(`amount`) AS `total`
+#> FROM `sales`
+#> WHERE (`amount` > 2.0)
+#> GROUP BY `day`
+collect(summary)
+#> # A tibble: 3 × 3
+#>     day     n total
+#>   <int> <dbl> <dbl>
+#> 1     1     3    21
+#> 2     3     4    30
+#> 3     2     3    24
+DBI::dbListTables(db)
+#> [1] "sales"
+DBI::dbDisconnect(db)
+```
+
+`dbConnect(spark_driver(), con = con)` wraps a connection you already
+have, such as one from
+[`spark_connect_databricks()`](https://pedrobtz.github.io/zuspark/reference/spark_connect_databricks.md).
 
 ## Next
 

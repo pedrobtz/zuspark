@@ -25,6 +25,11 @@ your machine.
   reattachable execution: a stream cut by a proxy or a timeout resumes
   where it stopped, and the server’s buffer is released as the rows are
   read.
+- **dplyr on Spark.** With DBI and dbplyr installed, a session is a DBI
+  connection: [`tbl()`](https://dplyr.tidyverse.org/reference/tbl.html)
+  and dplyr verbs become Spark SQL, run on the cluster, and only
+  [`collect()`](https://dplyr.tidyverse.org/reference/compute.html)
+  brings rows back.
 - **Databricks too.**
   [`spark_connect_databricks()`](https://pedrobtz.github.io/zuspark/reference/spark_connect_databricks.md)
   connects to a workspace’s serverless compute or to a cluster.
@@ -111,6 +116,33 @@ err$sql_state
 ``` r
 
 spark_disconnect(con)
+```
+
+With DBI and dbplyr, the same session works with dplyr. The pipeline
+below is translated to one Spark SQL query by dbplyr’s own Spark
+backend; Spark summarises a million rows and sends back seven.
+
+``` r
+
+library(dplyr, warn.conflicts = FALSE)
+db <- DBI::dbConnect(spark_driver(), "sc://localhost:15002")
+trips <- tbl(db, sql("SELECT id % 7 AS weekday, rand(1) * 30 AS minutes FROM range(1000000)"))
+trips |>
+  group_by(weekday) |>
+  summarise(trips = n(), minutes = mean(minutes, na.rm = TRUE)) |>
+  arrange(weekday) |>
+  collect()
+#> # A tibble: 7 × 3
+#>   weekday  trips minutes
+#>     <dbl>  <dbl>   <dbl>
+#> 1       0 142858    15.0
+#> 2       1 142857    15.0
+#> 3       2 142857    15.0
+#> 4       3 142857    15.0
+#> 5       4 142857    15.0
+#> 6       5 142857    15.0
+#> 7       6 142857    15.0
+DBI::dbDisconnect(db)
 ```
 
 Every function but
