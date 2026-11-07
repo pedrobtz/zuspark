@@ -32,7 +32,7 @@ benchmarks.
 | 8 | [Full CI](#stage-8--full-ci) | full | [#10](https://github.com/pedrobtz/zuspark/issues/10) | [#23](https://github.com/pedrobtz/zuspark/pull/23) | 2026-11-06 |
 | 9 | [v0.1.0 readiness](#stage-9--v010-readiness) | full | [#11](https://github.com/pedrobtz/zuspark/issues/11) | [#24](https://github.com/pedrobtz/zuspark/pull/24) | 2026-11-06 |
 | 10 | [Review](#stage-10--review) | full | [#12](https://github.com/pedrobtz/zuspark/issues/12) | [#63](https://github.com/pedrobtz/zuspark/pull/63) [#64](https://github.com/pedrobtz/zuspark/pull/64) [#65](https://github.com/pedrobtz/zuspark/pull/65) [#66](https://github.com/pedrobtz/zuspark/pull/66) [#67](https://github.com/pedrobtz/zuspark/pull/67) [#68](https://github.com/pedrobtz/zuspark/pull/68) [#69](https://github.com/pedrobtz/zuspark/pull/69) [#70](https://github.com/pedrobtz/zuspark/pull/70) [#71](https://github.com/pedrobtz/zuspark/pull/71) [#72](https://github.com/pedrobtz/zuspark/pull/72) [#73](https://github.com/pedrobtz/zuspark/pull/73) [#74](https://github.com/pedrobtz/zuspark/pull/74) [#75](https://github.com/pedrobtz/zuspark/pull/75) [#76](https://github.com/pedrobtz/zuspark/pull/76) [#77](https://github.com/pedrobtz/zuspark/pull/77) [#78](https://github.com/pedrobtz/zuspark/pull/78) | 2026-11-07 |
-| 11 | [DBI and dbplyr](#stage-11--dbi-and-dbplyr) | full | [#88](https://github.com/pedrobtz/zuspark/issues/88) | | 2026-11-07 |
+| 11 | [DBI and dbplyr](#stage-11--dbi-and-dbplyr) | full | [#88](https://github.com/pedrobtz/zuspark/issues/88) | [#89](https://github.com/pedrobtz/zuspark/pull/89) | 2026-11-07 |
 
 <!-- markdownlint-enable MD013 -->
 

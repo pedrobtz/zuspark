@@ -48,8 +48,10 @@ index and the articles "Get started", "Spark without the JVM" and
 Stage 9 made it 0.1.0, a GitHub release with `Remotes:` (design Q6). Stage 10, 2026-11-07: the
 critical review's 14 blocking and required findings fixed (#25 to #31,
 #39 to #45), and the CRAN review clean on `3838f65`; v0.1.0 is at 100%.
-The review's suggestions and questions (#32 to #38, #46 to #62) remain
-open for later versions. Exact
+The review's suggestions and questions (#32 to #38, #46 to #62) were
+fixed the same day (#80 to #87). Stage 11, 2026-11-07: a DBI driver and
+dbplyr support, both in Suggests (`R/dbi.R`, design D5 amended), reviewed
+with DBItest before merging (#89). Exact
 conversion of `int64`, `decimal128`
 and the time types is left out of 0.1.0 and waits on zuint, decimal and zutempo registering with
 zuarrow (zuint#52, decimal#24, zutempo#94). The
