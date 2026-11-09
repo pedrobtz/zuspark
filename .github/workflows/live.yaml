@@ -2,11 +2,19 @@
 # one runner with Docker, from zugrpc's `spark` job. Separate from
 # R-CMD-check.yaml, whose checks never touch a network; there, the live
 # tests skip and the recorded fixtures stand in for the server.
-
+#
+# Whether a push or pull request runs these is r-actions' `changes` gate,
+# the same one native-checks.yaml's jobs use, rather than a paths-ignore list
+# of its own: prose and repository housekeeping skip it (testthat snapshots,
+# Markdown under tests/, count as code), and so does a pull request labelled
+# `skip-ci:live` or `ci:minimal`. Labels apply to pull requests only, so
+# the push to main after merge still runs it.
 on:
   push:
     branches: [main, master]
   pull_request:
+    # `labeled`/`unlabeled` so that adding or removing a CI label reruns it.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
 
 name: live
@@ -20,7 +28,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    uses: pedrobtz/r-actions/.github/workflows/changes.yml@v1
+    with:
+      name: live
+
   spark:
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.docs-only != 'true' }}
     runs-on: ubuntu-latest
     name: spark connect (ubuntu-latest)
     timeout-minutes: 30
