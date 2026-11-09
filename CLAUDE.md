@@ -12,6 +12,7 @@ a shared file disagree, this file wins for this package.
 @.claude/shared/workflow.md
 @.claude/shared/r-package.md
 @.claude/shared/ci.md
+@.claude/shared/correctness.md
 
 ## What this is
 
