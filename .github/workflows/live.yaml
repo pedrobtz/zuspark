@@ -10,8 +10,10 @@
 # `skip-ci:live` or `ci:minimal`. Labels apply to pull requests only, so
 # the push to main after merge still runs it.
 on:
-  push:
-    branches: [main, master]
+  # No `push:`: a pull request already checks its merge with main,
+  # and the schedule checks main (r-actions README, "Pushes to main").
+  schedule:
+    - cron: "33 22 * * 0"
   pull_request:
     # `labeled`/`unlabeled` so that adding or removing a CI label reruns it.
     types: [opened, synchronize, reopened, labeled, unlabeled]
