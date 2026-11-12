@@ -78,6 +78,6 @@ released.
 con <- spark_connect()
 con
 #> <zuspark_connection> sc://127.0.0.1:15002 (Spark 4.2.1)
-#>   session: a058ea60-f14f-4c60-92bf-08259b3730d3
+#>   session: fece7f21-7d81-4b33-a27e-52f27e8c6510
 spark_disconnect(con)
 ```
