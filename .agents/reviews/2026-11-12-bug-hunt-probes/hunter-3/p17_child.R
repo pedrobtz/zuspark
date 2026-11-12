@@ -1,0 +1,8 @@
+source("pre.R")
+con <- spark_connect(URL)
+q <- spark_sql(con, "SELECT sum(id % 7) AS s FROM range(30000000000000)")
+cat("READY", con$session_id, "\n")
+t0 <- Sys.time()
+e <- tryCatch(spark_collect(q), condition = function(e) e)
+cat("returned", round(as.numeric(Sys.time() - t0, units = "secs"), 1), "s after start; class:", paste(class(e), collapse = "/"), "\n msg:", conditionMessage(e), "\n")
+cat(" failure:", if (!is.null(e$interrupt_failure)) conditionMessage(e$interrupt_failure) else "none", "\n")

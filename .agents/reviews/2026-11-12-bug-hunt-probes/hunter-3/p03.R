@@ -1,0 +1,35 @@
+source("pre.R")
+# same session id on two connections
+sid <- "11111111-2222-4333-8444-555555555555"
+a <- spark_connect(URL, session_id = sid)
+b <- spark_connect(URL, session_id = sid)
+print(spark_session_id(a)); print(spark_session_id(b))
+print(spark_disconnect(a))
+tc(spark_sql(b, "SELECT 1"))
+print(b); say("b released=%s chan=%d", b$released, nchan())
+tc(spark_disconnect(b)); print(b)
+# reuse retired id
+x <- tc(spark_connect(URL, session_id = sid)); say("chan=%d", nchan())
+# allow_reconnect
+sid2 <- "11111111-2222-4333-8444-666666666666"
+a <- spark_connect(URL, session_id = sid2)
+spark_sql(a, "CREATE OR REPLACE TEMPORARY VIEW v AS SELECT 1 AS x")
+print(spark_session_id(a))
+tc(spark_disconnect(a, allow_reconnect = NA)); tc(spark_disconnect(a, allow_reconnect = c(TRUE, TRUE)))
+say("still open: %s", !a$released)
+print(spark_disconnect(a, allow_reconnect = TRUE))
+b <- tc(spark_connect(URL, session_id = sid2))
+print(spark_session_id(b))
+tc(spark_collect(spark_sql(b, "SELECT * FROM v")))
+spark_disconnect(b)
+# interrupt with foreign op id
+a <- spark_connect(URL); b <- spark_connect(URL)
+q <- spark_sql(a, "SELECT 1"); spark_collect(q)
+print(tc(spark_interrupt(b, q$operation_id)))
+tc(spark_interrupt(b, q))
+print(tc(spark_interrupt(b, "")))
+print(tc(spark_interrupt(b, "not-a-uuid")))
+print(tc(spark_interrupt(b)))
+dq <- spark_sql(b, "SELECT 2"); print(tc(spark_interrupt(b, dq)))
+spark_disconnect(a); spark_disconnect(b)
+say("chan=%d", nchan())

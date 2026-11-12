@@ -1,0 +1,5 @@
+source("fake.R")
+con <- spark_connect(FURL)
+q <- spark_sql(con, "SELECT 1"); df <- spark_collect(q); print(dim(df)); print(q$rows)
+print(spark_disconnect(con)); print(calls()); say("chan %d", nchan())
+print(vapply(log$calls, function(c) format(c$deadline %||% "NULL"), ""))

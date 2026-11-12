@@ -1,0 +1,8 @@
+.libPaths(c("/private/tmp/claude-501/-Users-pbtz-src-github-com-pedrobtz-zuspark/23786a96-505c-4b1e-b66f-e320fa1ada7b/scratchpad/hunt/lib2", .libPaths()))
+suppressPackageStartupMessages({ library(zuspark); library(DBI) })
+d <- dbConnect(spark_driver(), "sc://127.0.0.1:16032")
+x <- structure(c(4.94065645841247e-324, 2.47032822920623e-323), class = "integer64")
+lit <- dbQuoteLiteral(d, x); print(lit); cat("bit64 loaded:", isNamespaceLoaded("bit64"), "\n")
+r <- dbGetQuery(d, paste("SELECT", lit[1], "AS a,", lit[2], "AS b, CAST(1 AS BIGINT) AS one"))
+str(unclass(r)); print(sapply(r, class))
+dbDisconnect(d)
