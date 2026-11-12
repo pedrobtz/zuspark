@@ -1,0 +1,19 @@
+# Holds .agents/assurance.md to the portfolio's assurance standard
+# (.claude/shared/assurance.md): a malformed file, a `done` no workflow
+# backs, or a gap with no issue fails.
+on:
+  # No `push:`: a pull request already checks its merge with main,
+  # and the schedule checks main (r-actions README, "Pushes to main").
+  schedule:
+    - cron: "38 22 * * 0"
+  pull_request:
+  workflow_dispatch:
+
+name: assurance
+
+permissions:
+  contents: read
+
+jobs:
+  assurance:
+    uses: pedrobtz/r-actions/.github/workflows/assurance.yml@v1
