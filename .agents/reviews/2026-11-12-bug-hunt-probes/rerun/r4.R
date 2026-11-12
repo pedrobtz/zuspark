@@ -1,0 +1,6 @@
+source("/private/tmp/claude-501/-Users-pbtz-src-github-com-pedrobtz-zuspark/23786a96-505c-4b1e-b66f-e320fa1ada7b/scratchpad/hunt/rerun/harness.R")
+icnd <- structure(class = c("zugrpc_error_interrupt", "zugrpc_error", "error", "condition"), list(message = "interrupted", call = NULL))
+srv <- new_server(streams = list(list(B(1, 0), icnd)))
+con <- srv$connect()
+try(spark_collect(new_q(con)), silent = TRUE)
+for (l in srv$log) cat("Y", l$method, "deadline", format(l$deadline), "\n")
