@@ -5,15 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Shared conventions
 
-The portfolio's shared rules are synced into `.claude/shared/` from
-`pedrobtz/packages:claude/shared/`. Never edit them here. Where this file and
-a shared file disagree, this file wins for this package.
+<!-- r-skills: shared-rules -->
 
-@.claude/shared/workflow.md
-@.claude/shared/r-package.md
-@.claude/shared/ci.md
-@.claude/shared/assurance.md
-@.claude/shared/correctness.md
+The portfolio's shared rules (`workflow`, `r-package`, `ci`, `native-code`,
+`correctness`, `assurance`) come from the
+[r-skills](https://github.com/pedrobtz/r-skills) plugin's `rules/`, loaded at
+session start because of the marker above. Never copy them here. Where this
+file and a shared rule disagree, this file wins for this package. Cloud
+sessions do not load the plugin and run without them.
 
 ## What this is
 
@@ -236,7 +235,7 @@ only Ubuntu runners have Docker.
 A gap found in `zugrpc` while testing is filed there as a zugrpc issue,
 not worked around here. Add the helpers and
 the suite's runtime here as stages land. The conventions
-every package follows are in `.claude/shared/r-package.md`.
+every package follows are in the shared `r-package.md` rules.
 
 ## Continuous integration
 
@@ -247,4 +246,4 @@ workflows at `@v1`; `pkgdown.yaml` builds and deploys the site with
 reattach test, and runs the live tests, because R CMD check never touches
 a network. Stage 2 is the first `full` stage; the stages marked `full`
 are listed in `.agents/roadmap.md`.
-What a change runs and what the CI labels do is in `.claude/shared/ci.md`.
+What a change runs and what the CI labels do is in the shared `ci.md` rules.
